@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:8000", // your backend URL
+  baseURL: import.meta.env.VITE_API_BASE_URL, // your backend URL
 });
 
 // Add access token to every request automatically
@@ -31,7 +31,7 @@ api.interceptors.response.use(
       if (refresh) {
         try {
           const { data } = await axios.post(
-            "http://localhost:8000/api/users/token/refresh/",
+            `${import.meta.env.VITE_API_BASE_URL}/api/users/token/refresh/`,
             { refresh }
           );
           localStorage.setItem("access", data.access);
@@ -50,7 +50,7 @@ api.interceptors.response.use(
 );
 
 export const unauthenticatedApi = axios.create({
-  baseURL: "http://localhost:8000", // your backend URL
+  baseURL: `${import.meta.env.VITE_API_BASE_URL}`, // your backend URL
 });
 
 export default api;
