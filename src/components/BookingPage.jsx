@@ -3,7 +3,7 @@ import { unauthenticatedApi } from "../api/axios";
 import {
     Calendar, Clock, MapPin, Star, Plus, Minus, ShoppingCart,
     User, Phone, Mail, CreditCard,
-    ShieldCheck, KeyRound, CheckCircle2, X
+    ShieldCheck, KeyRound, CheckCircle2, X, RotateCcw
 } from "lucide-react";
 
 import { Waves, Sofa, Flame, ShowerHead, TreePine } from "lucide-react";
@@ -39,13 +39,10 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
     const [itemsTotalPrice, setItemsTotalPrice] = useState(0);
     const [openedRoomId, setOpenedRoomId] = useState(null);
     const [currentRoomBookings, setCurrentRoomBookings] = useState([]);
-    const [countdown, setCountdown] = useState(null); // seconds
+    const [countdown, setCountdown] = useState(null);
     const [countdownInterval, setCountdownInterval] = useState(null);
 
-
-
     const navigate = useNavigate();
-
 
     useEffect(() => {
         const fetchBathhouses = async () => {
@@ -79,20 +76,6 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
         }
     };
 
-    // useEffect(() => {
-    //     const fetchBathhouses = async () => {
-    //         try {
-    //             const res = await unauthenticatedApi.get(API_URLS.bathhouses);
-    //             setBathhouses(res.data);
-    //         } catch {
-    //             toast.error("Не удалось загрузить бани");
-    //         }
-    //     };
-
-    //     fetchBathhouses();
-    // }, []);
-
-
     const toggleBathhouse = (id) => {
         if (!singleBathhouse) {
             navigate(`/booking/bathhouse/${id}`);
@@ -104,7 +87,6 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
 
     const fetchRoomBookings = async (roomId) => {
         try {
-            // If the same room clicked again => close it
             if (openedRoomId === roomId) {
                 setOpenedRoomId(null);
                 setCurrentRoomBookings([]);
@@ -120,7 +102,6 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
             toast.error("Не удалось загрузить бронирования");
         }
     };
-
 
     const isSlotBooked = (bookings, slotStart, slotEnd) => {
         return bookings.some((booking) => {
@@ -214,11 +195,11 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                 start_time: startUTC,
                 hours,
                 extra_items_data: selectedItems,
-                skip_sms: true, // 💡 флаг для API, если он поддерживает это
+                skip_sms: true,
             });
 
             setConfirmedBookingDetails(res.data);
-            setCountdown(570); // 9 минут 30 секунд
+            setCountdown(570);
 
             toast.success("Бронирование создано без подтверждения SMS");
             setShowConfirmPhoneModal(false);
@@ -229,7 +210,6 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
             setBookingLoading(false);
         }
     };
-
 
     const confirmPhoneAndBook = async () => {
         if (!selectedStartSlot || !selectedEndSlot || !currentRoom) return;
@@ -309,6 +289,7 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
         setBookingId(null);
         setSmsCode("");
         setSelectedItems([]);
+        setItemsTotalPrice(0);
     };
 
     const getDays = () => {
@@ -326,7 +307,6 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
         });
     };
 
-
     const generateHourBlocks = (bathhouse, day) => {
         const now = dayjs();
         let startHour = 0;
@@ -337,7 +317,7 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
             endHour = dayjs(`1970-01-01T${bathhouse.end_of_work}`).hour();
 
             if (endHour < startHour) {
-                endHour += 24; // Adjust endHour to represent the next day
+                endHour += 24;
             }
         }
 
@@ -354,8 +334,6 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
             slot.isSame(selectedStartSlot) ||
             slot.isSame(selectedEndSlot);
     };
-
-
 
     const days = getDays();
 
@@ -374,7 +352,6 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                 }
             }
 
-            // Calculate new items price
             let newItemsTotal = 0;
             for (const item of updated) {
                 const menuItem = menuItems.find((mi) => mi.id === item.item);
@@ -387,12 +364,11 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
             return updated;
         });
     };
+
     const totalPrice = estimatedPrice + itemsTotalPrice;
-
-
     const fmt = (n) => Number(n).toLocaleString();
 
-
+    // Group items by category
     const groupedItems = categories.reduce((acc, category) => {
         acc[category.id] = {
             name: category.name,
@@ -431,38 +407,47 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
             setCountdown((prev) => {
                 if (prev <= 1) {
                     clearInterval(interval);
-                    // Optionally: cancel booking, reset, etc.
                     return 0;
                 }
                 return prev - 1;
             });
         }, 1000);
 
-        return () => clearInterval(interval); // cleanup
+        return () => clearInterval(interval);
     }, [countdown]);
 
-
-
-
+    // Check if time is selected
+    const isTimeSelected = selectedStartSlot && selectedEndSlot && currentRoom;
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-            <div className="max-w-6xl mx-auto">
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
                 {/* Header */}
                 {singleBathhouse && (
-                    <div className="bg-white shadow-sm sticky top-0 z-40">
-                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                            <div className="flex items-center justify-between">
-                                <h1 className="text-2xl font-bold text-gray-900">Бронирование</h1>
-                                <div className="flex items-center space-x-4">
+                    <div className="bg-white shadow-sm sticky top-0 z-40 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
+                        <div className="max-w-7xl mx-auto py-4">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                <div className="flex items-center gap-4">
+                                    <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Бронирование</h1>
+                                    {isTimeSelected && (
+                                        <button
+                                            onClick={resetSelections}
+                                            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                                        >
+                                            <RotateCcw className="w-4 h-4" />
+                                            Сбросить
+                                        </button>
+                                    )}
+                                </div>
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
                                     <div className="bg-blue-50 px-4 py-2 rounded-lg">
-                                        <span className="text-blue-700 font-medium">
+                                        <span className="text-blue-700 font-medium text-sm sm:text-base">
                                             Итого: {totalPrice.toLocaleString()} ₸
                                         </span>
                                     </div>
                                     <button
-                                        onClick={() => setShowConfirmPhoneModal(true)}
-                                        className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                                        onClick={handleBook}
+                                        className="w-full sm:w-auto bg-blue-600 text-white px-4 sm:px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm sm:text-base"
                                         disabled={bookingLoading || !selectedStartSlot}
                                     >
                                         Забронировать
@@ -473,195 +458,207 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                     </div>
                 )}
 
-
-
-                <div className="space-y-6">
+                <div className="space-y-6 mt-6">
                     {bathhouses.map((bathhouse) => (
                         <div key={bathhouse.id} className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
                             <button
                                 onClick={() => toggleBathhouse(bathhouse.id)}
-                                className="w-full text-left p-6 hover:bg-gray-50 transition-colors"
+                                className="w-full text-left p-4 sm:p-6 hover:bg-gray-50 transition-colors"
                             >
                                 <div className="flex items-center justify-between">
-                                    <div>
-                                        <h2 className="text-2xl font-bold text-gray-900 mb-2">{bathhouse.name}</h2>
-                                        <div className="flex items-center text-gray-600">
-                                            <MapPin className="h-4 w-4 mr-2" />
-                                            <span>{bathhouse.address}</span>
+                                    <div className="flex-1">
+                                        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">{bathhouse.name}</h2>
+                                        <div className="flex items-center text-gray-600 mb-1">
+                                            <MapPin className="h-4 w-4 mr-2 flex-shrink-0" />
+                                            <span className="text-sm sm:text-base">{bathhouse.address}</span>
                                         </div>
-                                        <div className="flex items-center text-gray-600 mt-1">
-                                            <Clock className="h-4 w-4 mr-2" />
-                                            <span>
+                                        <div className="flex items-center text-gray-600">
+                                            <Clock className="h-4 w-4 mr-2 flex-shrink-0" />
+                                            <span className="text-sm sm:text-base">
                                                 {bathhouse.is_24_hours ? "Круглосуточно" :
                                                     `${dayjs(`1970-01-01T${bathhouse.start_of_work}`).format("HH:mm")} - ${dayjs(`1970-01-01T${bathhouse.end_of_work}`).format("HH:mm")}`}
-
                                             </span>
                                         </div>
                                     </div>
-                                    {singleBathhouse ? (
-                                        <div className="text-indigo-600 font-medium">
-                                            {expandedBathhouseId === bathhouse.id ? "Скрыть комнаты" : "Посмотреть комнаты"}
-                                        </div>
-                                    ) : (
-                                        <div className="text-indigo-600 font-medium">
-                                            {expandedBathhouseId === bathhouse.id ? "Скрыть" : "Посмотреть"}
-                                        </div>
-                                    )
-                                    }
+                                    <div className="text-indigo-600 font-medium text-sm sm:text-base ml-4">
+                                        {singleBathhouse ?
+                                            (expandedBathhouseId === bathhouse.id ? "Скрыть комнаты" : "Посмотреть комнаты") :
+                                            (expandedBathhouseId === bathhouse.id ? "Скрыть" : "Посмотреть")
+                                        }
+                                    </div>
                                 </div>
                             </button>
 
                             {expandedBathhouseId === bathhouse.id && bathhouse.rooms && (
-                                <div className="p-6 pt-0">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        {bathhouse.rooms.map((room) => (
-                                            <div key={room.id} className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-200">
-                                                <div className="p-6 space-y-4">
-                                                    <div className="flex items-center justify-between">
-                                                        <div>
-                                                            <h3 className="text-xl font-bold text-gray-900">
-                                                                {room.is_sauna
-                                                                    ? `Сауна ${room.room_number}`
-                                                                    : room.is_bathhouse
-                                                                        ? `Баня ${room.room_number}`
-                                                                        : `Комната ${room.room_number}`}
-                                                            </h3>
-                                                            <p className="text-gray-500">{room.capacity} чел.</p>
-                                                        </div>
-                                                        <div className="text-right">
-                                                            <div className="text-xl font-bold text-blue-600">
-                                                                {parseInt(room.price_per_hour).toLocaleString()} ₸
+                                <div className="p-4 sm:p-6 pt-0">
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                                        {bathhouse.rooms.map((room) => {
+                                            // Hide other rooms if time is selected and this isn't the selected room
+                                            if (isTimeSelected && currentRoom && currentRoom.id !== room.id) {
+                                                return null;
+                                            }
+
+                                            return (
+                                                <div key={room.id} className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-200">
+                                                    <div className="p-4 sm:p-6 space-y-4">
+                                                        <div className="flex items-center justify-between">
+                                                            <div>
+                                                                <h3 className="text-lg sm:text-xl font-bold text-gray-900">
+                                                                    {room.is_sauna
+                                                                        ? `Сауна ${room.room_number}`
+                                                                        : room.is_bathhouse
+                                                                            ? `Баня ${room.room_number}`
+                                                                            : `Комната ${room.room_number}`}
+                                                                </h3>
+                                                                <p className="text-gray-500 text-sm sm:text-base">{room.capacity} чел.</p>
                                                             </div>
-                                                            <div className="text-sm text-gray-500">в час</div>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Удобства */}
-                                                    <div className="flex flex-wrap gap-2 text-sm text-gray-600">
-                                                        {room.has_pool && <span className="bg-blue-50 px-3 py-1 rounded-full">Бассейн</span>}
-                                                        {room.has_recreation_area && <span className="bg-blue-50 px-3 py-1 rounded-full">Зона отдыха</span>}
-                                                        {room.has_steam_room && <span className="bg-blue-50 px-3 py-1 rounded-full">Парная</span>}
-                                                        {room.has_washing_area && <span className="bg-blue-50 px-3 py-1 rounded-full">Мойка</span>}
-                                                        {room.heated_by_wood && <span className="bg-green-50 px-3 py-1 rounded-full">На дровах</span>}
-                                                        {room.heated_by_coal && <span className="bg-gray-50 px-3 py-1 rounded-full">На углях</span>}
-                                                    </div>
-
-                                                    <button
-                                                        onClick={() => fetchRoomBookings(room.id)}
-                                                        className="w-full bg-indigo-600 text-white py-3 px-4 rounded-lg hover:bg-indigo-700 transition-colors font-medium"
-                                                    >
-                                                        {openedRoomId === room.id ? 'Закрыть' : 'Проверить доступность'}
-                                                    </button>
-
-                                                    {openedRoomId === room.id && (
-                                                        <>
-                                                            <div className="overflow-x-auto my-4">
-                                                                <div className="flex space-x-2 w-max">
-                                                                    {days.map((day, index) => (
-                                                                        <button
-                                                                            key={index}
-                                                                            onClick={() => setSelectedDay(index)}
-                                                                            className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${selectedDay === index
-                                                                                ? 'bg-indigo-600 text-white'
-                                                                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                                                                }`}
-                                                                        >
-                                                                            {day.label}
-                                                                        </button>
-                                                                    ))}
+                                                            <div className="text-right">
+                                                                <div className="text-lg sm:text-xl font-bold text-blue-600">
+                                                                    {parseInt(room.price_per_hour).toLocaleString()} ₸
                                                                 </div>
+                                                                <div className="text-xs sm:text-sm text-gray-500">в час</div>
                                                             </div>
+                                                        </div>
 
+                                                        {/* Amenities */}
+                                                        <div className="flex flex-wrap gap-2 text-xs sm:text-sm text-gray-600">
+                                                            {room.has_pool && <span className="bg-blue-50 px-2 sm:px-3 py-1 rounded-full">Бассейн</span>}
+                                                            {room.has_recreation_area && <span className="bg-blue-50 px-2 sm:px-3 py-1 rounded-full">Зона отдыха</span>}
+                                                            {room.has_steam_room && <span className="bg-blue-50 px-2 sm:px-3 py-1 rounded-full">Парная</span>}
+                                                            {room.has_washing_area && <span className="bg-blue-50 px-2 sm:px-3 py-1 rounded-full">Мойка</span>}
+                                                            {room.heated_by_wood && <span className="bg-green-50 px-2 sm:px-3 py-1 rounded-full">На дровах</span>}
+                                                            {room.heated_by_coal && <span className="bg-gray-50 px-2 sm:px-3 py-1 rounded-full">На углях</span>}
+                                                        </div>
 
-                                                            <div className="grid grid-cols-4 gap-2">
-                                                                {generateHourBlocks(bathhouse, days[selectedDay].date).map((hour) => {
-                                                                    const slotStart = days[selectedDay].date.hour(hour).minute(0).second(0);
-                                                                    const slotEnd = slotStart.add(1, "hour");
-                                                                    const booked = isSlotBooked(currentRoomBookings, slotStart, slotEnd);
+                                                        <button
+                                                            onClick={() => fetchRoomBookings(room.id)}
+                                                            className="w-full bg-indigo-600 text-white py-2 sm:py-3 px-4 rounded-lg hover:bg-indigo-700 transition-colors font-medium text-sm sm:text-base"
+                                                        >
+                                                            {openedRoomId === room.id ? 'Закрыть' : 'Проверить доступность'}
+                                                        </button>
 
-                                                                    const isSelectedStart = selectedStartSlot && slotStart.isSame(selectedStartSlot);
-                                                                    const isSelectedEnd = selectedEndSlot && slotStart.isSame(selectedEndSlot);
-                                                                    const inRange = isInRange(slotStart);
+                                                        {openedRoomId === room.id && (
+                                                            <>
+                                                                {/* Day selection */}
+                                                                <div className="overflow-x-auto my-4">
+                                                                    <div className="flex space-x-2 w-max">
+                                                                        {days.map((day, index) => (
+                                                                            <button
+                                                                                key={index}
+                                                                                onClick={() => setSelectedDay(index)}
+                                                                                className={`px-3 sm:px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors text-sm sm:text-base ${selectedDay === index
+                                                                                    ? 'bg-indigo-600 text-white'
+                                                                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                                                                    }`}
+                                                                            >
+                                                                                {day.label}
+                                                                            </button>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
 
-                                                                    let buttonClass = "w-full text-xs py-2 rounded font-medium transition ";
+                                                                {/* Time slots */}
+                                                                <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2">
+                                                                    {generateHourBlocks(bathhouse, days[selectedDay].date).map((hour) => {
+                                                                        const slotStart = days[selectedDay].date.hour(hour).minute(0).second(0);
+                                                                        const slotEnd = slotStart.add(1, "hour");
+                                                                        const booked = isSlotBooked(currentRoomBookings, slotStart, slotEnd);
 
-                                                                    if (booked) {
-                                                                        buttonClass += "bg-red-100 text-red-800 cursor-not-allowed";
-                                                                    } else if (isSelectedStart) {
-                                                                        buttonClass += "bg-green-500 text-white";
-                                                                    } else if (isSelectedEnd) {
-                                                                        buttonClass += "bg-blue-500 text-white";
-                                                                    } else if (inRange) {
-                                                                        buttonClass += "bg-yellow-200 text-yellow-800";
-                                                                    } else {
-                                                                        buttonClass += "bg-green-100 text-green-800 hover:bg-green-200";
-                                                                    }
+                                                                        const isSelectedStart = selectedStartSlot && slotStart.isSame(selectedStartSlot);
+                                                                        const isSelectedEnd = selectedEndSlot && slotStart.isSame(selectedEndSlot);
+                                                                        const inRange = isInRange(slotStart);
 
-                                                                    return (
-                                                                        <button
-                                                                            key={hour}
-                                                                            disabled={booked || bookingLoading}
-                                                                            onClick={() => handleSlotClick(slotStart, room)}
-                                                                            className={buttonClass}
-                                                                        >
-                                                                            {slotStart.format("HH:mm")}
-                                                                        </button>
-                                                                    );
-                                                                })}
-                                                            </div>
-                                                            <div className="bg-white rounded-2xl shadow-sm p-6 mt-6">
-                                                                <h3 className="text-xl font-bold text-gray-900 mb-6">Дополнительные услуги</h3>
-                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                                    {menuItems.map((item) => {
-                                                                        const selected = selectedItems.find(it => it.item === item.id)?.quantity || 0;
+                                                                        let buttonClass = "w-full text-xs py-2 rounded font-medium transition ";
+
+                                                                        if (booked) {
+                                                                            buttonClass += "bg-red-100 text-red-800 cursor-not-allowed";
+                                                                        } else if (isSelectedStart) {
+                                                                            buttonClass += "bg-green-500 text-white";
+                                                                        } else if (isSelectedEnd) {
+                                                                            buttonClass += "bg-blue-500 text-white";
+                                                                        } else if (inRange) {
+                                                                            buttonClass += "bg-yellow-200 text-yellow-800";
+                                                                        } else {
+                                                                            buttonClass += "bg-green-100 text-green-800 hover:bg-green-200";
+                                                                        }
+
                                                                         return (
-                                                                            <div key={item.id} className="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition-colors">
-                                                                                <div className="flex items-center space-x-4">
-                                                                                    <div className="relative">
-                                                                                        <img
-                                                                                            src={item.image}
-                                                                                            alt={item.name}
-                                                                                            className="w-16 h-16 object-cover rounded-lg"
-                                                                                        />
-                                                                                    </div>
-                                                                                    <div className="flex-1">
-                                                                                        <h4 className="font-medium text-gray-900">{item.name}</h4>
-                                                                                        <p className="text-sm text-gray-500 mb-2">{Number(item.price).toLocaleString()} ₸</p>
-                                                                                        <div className="flex items-center space-x-2">
-                                                                                            {selected > 0 && (
-                                                                                                <>
-                                                                                                    <button
-                                                                                                        onClick={() => handleItemQuantityChange(item.id, Math.max(selected - 1, 0))}
-                                                                                                        className="w-8 h-8 bg-red-100 text-red-600 rounded-full flex items-center justify-center hover:bg-red-200 transition-colors"
-                                                                                                    >
-                                                                                                        −
-                                                                                                    </button>
-                                                                                                    <span className="w-6 text-center font-medium">{selected}</span>
-                                                                                                </>
-                                                                                            )}
-                                                                                            <button
-                                                                                                onClick={() => handleItemQuantityChange(item.id, selected + 1)}
-                                                                                                className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center hover:bg-blue-200 transition-colors"
-                                                                                            >
-                                                                                                +
-                                                                                            </button>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
+                                                                            <button
+                                                                                key={hour}
+                                                                                disabled={booked || bookingLoading}
+                                                                                onClick={() => handleSlotClick(slotStart, room)}
+                                                                                className={buttonClass}
+                                                                            >
+                                                                                {slotStart.format("HH:mm")}
+                                                                            </button>
                                                                         );
                                                                     })}
                                                                 </div>
-                                                            </div>
 
-                                                        </>
-
-
-                                                    )}
+                                                                {/* Additional services */}
+                                                                {Object.keys(groupedItems).length > 0 && (
+                                                                    <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6 mt-6">
+                                                                        <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6">Дополнительные услуги</h3>
+                                                                        <div className="space-y-6">
+                                                                            {Object.entries(groupedItems).map(([categoryId, categoryData]) => (
+                                                                                <div key={categoryId}>
+                                                                                    <h4 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4">
+                                                                                        {categoryData.name}
+                                                                                    </h4>
+                                                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                                                                                        {categoryData.items.map((item) => {
+                                                                                            const selected = selectedItems.find(it => it.item === item.id)?.quantity || 0;
+                                                                                            return (
+                                                                                                <div key={item.id} className="bg-gray-50 rounded-xl p-3 sm:p-4 hover:bg-gray-100 transition-colors">
+                                                                                                    <div className="flex items-center space-x-3 sm:space-x-4">
+                                                                                                        {item.image && (
+                                                                                                            <div className="relative flex-shrink-0">
+                                                                                                                <img
+                                                                                                                    src={item.image}
+                                                                                                                    alt={item.name}
+                                                                                                                    className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-lg"
+                                                                                                                />
+                                                                                                            </div>
+                                                                                                        )}
+                                                                                                        <div className="flex-1 min-w-0">
+                                                                                                            <h5 className="font-medium text-gray-900 text-sm sm:text-base truncate">{item.name}</h5>
+                                                                                                            <p className="text-sm text-gray-500 mb-2">{Number(item.price).toLocaleString()} ₸</p>
+                                                                                                            <div className="flex items-center space-x-2">
+                                                                                                                {selected > 0 && (
+                                                                                                                    <>
+                                                                                                                        <button
+                                                                                                                            onClick={() => handleItemQuantityChange(item.id, Math.max(selected - 1, 0))}
+                                                                                                                            className="w-7 h-7 sm:w-8 sm:h-8 bg-red-100 text-red-600 rounded-full flex items-center justify-center hover:bg-red-200 transition-colors text-sm"
+                                                                                                                        >
+                                                                                                                            −
+                                                                                                                        </button>
+                                                                                                                        <span className="w-6 text-center font-medium">{selected}</span>
+                                                                                                                    </>
+                                                                                                                )}
+                                                                                                                <button
+                                                                                                                    onClick={() => handleItemQuantityChange(item.id, selected + 1)}
+                                                                                                                    className="w-7 h-7 sm:w-8 sm:h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center hover:bg-blue-200 transition-colors text-sm"
+                                                                                                                >
+                                                                                                                    +
+                                                                                                                </button>
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            );
+                                                                                        })}
+                                                                                    </div>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                            </div>
-
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             )}
@@ -670,17 +667,11 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                 </div>
             </div>
 
-            {/* Модальное подтверждение номера */}
+            {/* Phone confirmation modal */}
             {showConfirmPhoneModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    {/* backdrop */}
-                    <div
-                        className="absolute inset-0 bg-black/50"
-                        onClick={() => setShowConfirmPhoneModal(false)}
-                    />
-
+                    <div className="absolute inset-0 bg-black/50" onClick={() => setShowConfirmPhoneModal(false)} />
                     <div className="relative bg-white rounded-2xl w-full max-w-md p-6 shadow-xl animate-[fadeIn_.15s_ease-out]">
-                        {/* Close */}
                         <button
                             onClick={() => setShowConfirmPhoneModal(false)}
                             className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
@@ -699,7 +690,6 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                             />
                         </div>
 
-                        {/* Телефон */}
                         <div className="mb-4">
                             <label className="block text-sm font-medium text-gray-700 mb-1">Телефон *</label>
                             <input
@@ -711,17 +701,6 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                             />
                         </div>
 
-                        {/* TODO: This must be uncommented in future */}
-                        {/* <div className="text-center mb-4">
-                            <ShieldCheck className="w-10 h-10 mx-auto text-blue-600 mb-2" />
-                            <h3 className="text-xl font-bold text-gray-900">Подтвердите номер телефона</h3>
-                            <p className="text-gray-600 text-sm mt-1">
-                                Мы отправим SMS с кодом подтверждения на указанный номер.
-                            </p>
-                        </div> */}
-
-
-                        {/* Резюме бронирования */}
                         <div className="space-y-2 text-sm text-gray-700 mb-4">
                             {currentRoom && (
                                 <p>
@@ -744,7 +723,6 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                             </p>
                         </div>
 
-                        {/* Доп. услуги (если выбраны) */}
                         {selectedItemsDetailed.length > 0 && (
                             <div className="mb-4">
                                 <h4 className="text-sm font-semibold text-gray-800 mb-2">Дополнительные услуги:</h4>
@@ -767,8 +745,6 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                                 >
                                     Отмена
                                 </button>
-
-                                {/* TODO: This must be uncommented in future */}
                                 {/* <button
                                     onClick={confirmPhoneAndBook}
                                     disabled={bookingLoading}
@@ -777,30 +753,29 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                                     {bookingLoading ? "Отправка..." : "Подтвердить по SMS"}
                                 </button> */}
                             </div>
+                            {/* <button
+                                onClick={bookWithoutSms}
+                                disabled={bookingLoading}
+                                className="flex-1 py-2 rounded-lg bg-gray-200 text-gray-800 font-medium hover:bg-gray-300 disabled:bg-gray-100 transition"
+                            >
+                                Продолжить без SMS
+                            </button> */}
                             <button
                                 onClick={bookWithoutSms}
                                 disabled={bookingLoading}
                                 className="flex-1 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:bg-gray-400 transition"
-                            // className="w-full py-2 rounded-lg bg-gray-200 text-gray-800 font-medium hover:bg-gray-300 disabled:bg-gray-100 transition"
                             >
-                                {/* Продолжить без SMS */}
-                                Продолжить
+                                Забронировать
                             </button>
                         </div>
-
                     </div>
                 </div>
             )}
 
-
-            {/* Модальное окно ввода кода */}
+            {/* SMS code modal */}
             {showSmsCodeModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div
-                        className="absolute inset-0 bg-black/50"
-                        onClick={() => setShowSmsCodeModal(false)}
-                    />
-
+                    <div className="absolute inset-0 bg-black/50" onClick={() => setShowSmsCodeModal(false)} />
                     <div className="relative bg-white rounded-2xl w-full max-w-sm p-6 shadow-xl">
                         <button
                             onClick={() => setShowSmsCodeModal(false)}
@@ -817,7 +792,6 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                             </p>
                         </div>
 
-                        {/* Поле кода */}
                         <input
                             type="text"
                             value={smsCode}
@@ -831,14 +805,14 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                             maxLength={4}
                             className="w-full tracking-widest text-center text-2xl py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 mb-4"
                         />
+
                         <button
                             onClick={() => {
                                 setShowSmsCodeModal(false);
                                 toast.success("Бронирование создано, но не подтверждено. Обратитесь к администратору.");
-                                setCountdown(570); // 9 минут 30 секунд
-
+                                setCountdown(570);
                             }}
-                            className="flex-1 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition"
+                            className="flex-1 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition mb-3"
                         >
                             Без SMS
                         </button>
@@ -854,17 +828,14 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                 </div>
             )}
 
-
+            {/* Booking confirmation modal */}
             {confirmedBookingDetails && !showSmsCodeModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div
-                        className="absolute inset-0 bg-black/50"
-                        onClick={() => {
-                            setConfirmedBookingDetails(null);
-                            if (currentRoom?.id) fetchRoomBookings(currentRoom.id);
-                            resetSelections();
-                        }}
-                    />
+                    <div className="absolute inset-0 bg-black/50" onClick={() => {
+                        setConfirmedBookingDetails(null);
+                        if (currentRoom?.id) fetchRoomBookings(currentRoom.id);
+                        resetSelections();
+                    }} />
 
                     <div className="relative bg-white rounded-2xl w-full max-w-lg p-6 shadow-xl">
                         <button
@@ -879,11 +850,10 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                         </button>
 
                         <div className="text-center mb-4">
-                            {/* TODO: This must be uncommented in the future */}
                             {/* {countdown !== null ? (
                                 <div className="bg-yellow-100 border border-yellow-300 text-yellow-800 rounded p-3 mb-4 text-sm text-center">
                                     <Clock className="w-6 h-6 inline-block text-yellow-800 mr-2" />
-                                    Мы ожидаем подтверждение. Пожалуйста, позвоните по номеру <strong>{bathhouses[0].phone}</strong> для подтверждения брони.<br />
+                                    Мы ожидаем подтверждение. Пожалуйста, позвоните по номеру <strong>{bathhouses[0]?.phone}</strong> для подтверждения брони.<br />
                                     <span className="font-semibold">
                                         Осталось времени: {Math.floor(countdown / 60)} мин. {(countdown % 60)} сек.
                                     </span>
@@ -894,8 +864,6 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                                     <h3 className="text-xl font-bold text-gray-900">Бронирование подтверждено!</h3>
                                 </>
                             )} */}
-
-                            {/* TODO: This must be deleted in future */}
                             <CheckCircle2 className="w-12 h-12 mx-auto text-green-600 mb-2" />
                             <h3 className="text-xl font-bold text-gray-900">Бронирование подтверждено!</h3>
 
@@ -913,7 +881,6 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                             <p><strong>Длительность:</strong> {confirmedBookingDetails.hours} ч.</p>
                         </div>
 
-                        {/* Таблица доп. услуг */}
                         {Array.isArray(confirmedBookingDetails.extra_items) && confirmedBookingDetails.extra_items.length > 0 && (
                             <div className="mb-4">
                                 <h4 className="text-sm font-semibold text-gray-800 mb-2">Дополнительные позиции:</h4>
@@ -942,7 +909,6 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                             </div>
                         )}
 
-                        {/* Итог */}
                         <div className="border-t pt-4 mt-4">
                             <div className="flex justify-between text-sm">
                                 <span>Комната:</span>
@@ -977,7 +943,6 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                     </div>
                 </div>
             )}
-
         </div>
     );
 }
