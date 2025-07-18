@@ -333,8 +333,12 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
         let endHour = 23;
 
         if (!bathhouse.is_24_hours && bathhouse.start_of_work && bathhouse.end_of_work) {
-            startHour = dayjs(`1970-01-01T${bathhouse.start_of_work}`).hour() + 5;
-            endHour = dayjs(`1970-01-01T${bathhouse.end_of_work}`).hour() + 4;
+            startHour = dayjs(`1970-01-01T${bathhouse.start_of_work}`).hour();
+            endHour = dayjs(`1970-01-01T${bathhouse.end_of_work}`).hour();
+
+            if (endHour < startHour) {
+                endHour += 24; // Adjust endHour to represent the next day
+            }
         }
 
         if (day.isSame(now, "day")) {
@@ -489,7 +493,7 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                                             <Clock className="h-4 w-4 mr-2" />
                                             <span>
                                                 {bathhouse.is_24_hours ? "Круглосуточно" :
-                                                    `${dayjs(`1970-01-01T${bathhouse.start_of_work}`).add(5, 'hour').format("HH:mm")} - ${dayjs(`1970-01-01T${bathhouse.end_of_work}`).add(5, 'hour').format("HH:mm")}`}
+                                                    `${dayjs(`1970-01-01T${bathhouse.start_of_work}`).format("HH:mm")} - ${dayjs(`1970-01-01T${bathhouse.end_of_work}`).format("HH:mm")}`}
 
                                             </span>
                                         </div>

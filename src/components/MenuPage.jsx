@@ -252,13 +252,13 @@ export default function MenuPage() {
 
     if (!bathhouseId) {
         return (
-            <div className="p-8 flex flex-col items-center justify-center min-h-screen bg-gray-50">
-                <div className="bg-white p-6 rounded-lg shadow-md text-center">
-                    <h1 className="text-2xl font-bold text-red-600 mb-4">Отсутствует ID банного комплекса</h1>
-                    <p className="mb-4 text-gray-600">Пожалуйста, укажите <code>bathhouse_id</code> в параметрах запроса, чтобы просмотреть меню.</p>
+            <div className="p-4 sm:p-8 flex flex-col items-center justify-center min-h-screen bg-gray-50">
+                <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md text-center max-w-md w-full">
+                    <h1 className="text-lg sm:text-2xl font-bold text-red-600 mb-4">Отсутствует ID банного комплекса</h1>
+                    <p className="mb-4 text-gray-600 text-sm sm:text-base">Пожалуйста, укажите <code className="bg-gray-100 px-1 rounded">bathhouse_id</code> в параметрах запроса, чтобы просмотреть меню.</p>
                     <button
                         onClick={handleBack}
-                        className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition"
+                        className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition w-full sm:w-auto"
                     >
                         Вернуться на панель управления
                     </button>
@@ -268,13 +268,22 @@ export default function MenuPage() {
     }
 
     return (
-        <div className="flex min-h-screen bg-gray-50">
-            <Sidebar activeTab={"menu"} user={user} logout={logout} bathhouseID={bathhouseId} navigate={navigate} />
-            <main className="flex-1 p-8">
-                <h1 className="text-3xl font-bold mb-6 text-gray-900">Меню для банного комплекса ID: {bathhouseId}</h1>
+        <div className="flex flex-col lg:flex-row min-h-screen bg-gray-50">
+            {/* Mobile-first sidebar - hidden on mobile by default */}
+            <div className="lg:block">
+                <Sidebar activeTab={"menu"} user={user} logout={logout} bathhouseID={bathhouseId} navigate={navigate} />
+            </div>
+
+            <main className="flex-1 p-4 sm:p-6 lg:p-8">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-4 sm:mb-6 text-gray-900 break-words">
+                    Меню для банного комплекса ID: {bathhouseId}
+                </h1>
 
                 {loading ? (
-                    <p className="text-gray-700">Загрузка меню...</p>
+                    <div className="flex justify-center items-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
+                        <p className="ml-3 text-gray-700">Загрузка меню...</p>
+                    </div>
                 ) : (
                     <MenuItemsList
                         menuItems={menuItems}
@@ -288,6 +297,7 @@ export default function MenuPage() {
                     />
                 )}
             </main>
+
             <MenuModal
                 isOpen={isMenuModalOpen}
                 setIsOpen={setIsMenuModalOpen}

@@ -18,12 +18,22 @@ export default function BookingList() {
     const [currentDate, setCurrentDate] = useState(dayjs());
     const [selectedBooking, setSelectedBooking] = useState(null);
     const [viewMode, setViewMode] = useState("table");
+    const [currentTime, setCurrentTime] = useState(dayjs());
 
     const slotHeight = 48; // 48px per hour
     const headerHeight = 48;
 
     useEffect(() => {
         fetchBathhouses();
+    }, []);
+
+    // Update current time every minute
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setCurrentTime(dayjs());
+        }, 60000); // Update every minute
+
+        return () => clearInterval(interval);
     }, []);
 
     const fetchBathhouses = async () => {
@@ -82,13 +92,99 @@ export default function BookingList() {
     };
 
     const generateTimeSlots = () => {
+        if (!selectedBathhouse) return [];
+
         const slots = [];
-        for (let hour = 6; hour < 30; hour++) {
-            const displayHour = hour >= 24 ? hour - 24 : hour;
-            slots.push({ time: `${displayHour.toString().padStart(2, '0')}:00`, hour });
+        const startTime = dayjs(`2000-01-01 ${selectedBathhouse.start_of_work}`);
+        const endTime = dayjs(`2000-01-01 ${selectedBathhouse.end_of_work}`);
+
+        // Calculate if it's an overnight schedule
+        const isOvernight = endTime.isBefore(startTime) || endTime.isSame(startTime);
+
+        let currentSlot = startTime;
+        let slotIndex = 0;
+
+        while (true) {
+            const hour = currentSlot.hour();
+            const displayHour = hour;
+
+            slots.push({
+                time: `${displayHour.toString().padStart(2, '0')}:00`,
+                hour: hour,
+                slotIndex: slotIndex
+            });
+
+            currentSlot = currentSlot.add(1, 'hour');
+            slotIndex++;
+
+            // Stop condition
+            if (isOvernight) {
+                // For overnight: stop when we reach end time on next day
+                if (currentSlot.hour() === endTime.hour() && slotIndex > 1) {
+                    break;
+                }
+                // Safety check to prevent infinite loop
+                if (slotIndex >= 24) break;
+            } else {
+                // For regular schedule: stop when we reach end time
+                if (currentSlot.hour() === endTime.hour()) {
+                    break;
+                }
+                // Safety check
+                if (slotIndex >= 24) break;
+            }
         }
+
         return slots;
     };
+
+    const getCurrentTimeLinePosition = () => {
+        if (!selectedBathhouse) return null;
+
+        const now = currentTime;
+        const currentHour = now.hour();
+        const currentMinutes = now.minute();
+
+        // Only show the line if we're viewing today
+        if (!currentDate.isSame(dayjs(), 'day')) {
+            return null;
+        }
+
+        const startTime = dayjs(`2000-01-01 ${selectedBathhouse.start_of_work}`);
+        const endTime = dayjs(`2000-01-01 ${selectedBathhouse.end_of_work}`);
+        const isOvernight = endTime.isBefore(startTime) || endTime.isSame(startTime);
+
+        let isWithinWorkingHours = false;
+        let slotPosition = 0;
+
+        if (isOvernight) {
+            // For overnight schedule (e.g., 22:00 - 06:00)
+            if (currentHour >= startTime.hour() || currentHour < endTime.hour()) {
+                isWithinWorkingHours = true;
+                if (currentHour >= startTime.hour()) {
+                    // Same day (e.g., 22:00, 23:00)
+                    slotPosition = currentHour - startTime.hour();
+                } else {
+                    // Next day (e.g., 00:00, 01:00, 02:00)
+                    slotPosition = (24 - startTime.hour()) + currentHour;
+                }
+            }
+        } else {
+            // For regular schedule (e.g., 10:00 - 18:00)
+            if (currentHour >= startTime.hour() && currentHour < endTime.hour()) {
+                isWithinWorkingHours = true;
+                slotPosition = currentHour - startTime.hour();
+            }
+        }
+
+        if (!isWithinWorkingHours) {
+            return null;
+        }
+
+        const topOffset = (slotPosition * slotHeight) + (currentMinutes / 60) * slotHeight;
+        return topOffset;
+    };
+
     const timeSlots = generateTimeSlots();
     const rooms = selectedBathhouse ? selectedBathhouse.rooms || [] : [];
 
@@ -195,12 +291,12 @@ export default function BookingList() {
                                                 <div key={slot.time} className="border-b text-xs text-gray-500 flex items-center justify-end pr-2" style={{ height: `${slotHeight}px` }}>{slot.time}</div>
                                             ))}
                                         </div>
-                                        <div className="flex-1 flex">
+                                        <div className="flex-1 flex relative">
                                             {rooms.map(room => (
                                                 <div key={room.id} className="flex-1 border-r relative">
                                                     <div className="text-center p-2 border-b bg-gray-50" style={{ height: `${headerHeight}px` }}>
-                                                        <div className="font-medium">Комн. #{room.room_number}</div>
-                                                        <div className="text-xs text-gray-500">до {room.capacity} чел.</div>
+                                                        <div className="font-medium">{room.is_sauna ? "Сауна" : room.is_bathhouse ? "Баня" : "Комната"} #{room.room_number}</div>
+                                                        <div className="text-xs text-gray-500">{room.capacity} чел.</div>
                                                     </div>
                                                     <div className="relative" style={{ height: `${timeSlots.length * slotHeight}px` }}>
                                                         {bookingsForCurrentDate
@@ -209,7 +305,24 @@ export default function BookingList() {
                                                                 const start = dayjs(booking.start_time);
                                                                 const startHour = start.hour();
                                                                 const startMinutes = start.minute();
-                                                                const topOffset = ((startHour - 6) * slotHeight) + (startMinutes / 60) * slotHeight;
+
+                                                                // Calculate position based on bathhouse working hours
+                                                                const bathhouseStart = dayjs(`2000-01-01 ${selectedBathhouse.start_of_work}`);
+                                                                const bathhouseEnd = dayjs(`2000-01-01 ${selectedBathhouse.end_of_work}`);
+                                                                const isOvernight = bathhouseEnd.isBefore(bathhouseStart) || bathhouseEnd.isSame(bathhouseStart);
+
+                                                                let slotPosition = 0;
+                                                                if (isOvernight) {
+                                                                    if (startHour >= bathhouseStart.hour()) {
+                                                                        slotPosition = startHour - bathhouseStart.hour();
+                                                                    } else {
+                                                                        slotPosition = (24 - bathhouseStart.hour()) + startHour;
+                                                                    }
+                                                                } else {
+                                                                    slotPosition = startHour - bathhouseStart.hour();
+                                                                }
+
+                                                                const topOffset = (slotPosition * slotHeight) + (startMinutes / 60) * slotHeight;
                                                                 const height = booking.hours * slotHeight;
 
 
@@ -230,6 +343,22 @@ export default function BookingList() {
                                                     </div>
                                                 </div>
                                             ))}
+                                            {/* Current time line */}
+                                            {getCurrentTimeLinePosition() !== null && (
+                                                <div
+                                                    className="absolute left-0 right-0 z-10 pointer-events-none"
+                                                    style={{ top: `${headerHeight + getCurrentTimeLinePosition()}px` }}
+                                                >
+                                                    <div className="flex items-center">
+                                                        <div className="w-20 flex justify-end pr-2">
+                                                            <div className="bg-red-500 text-white text-xs px-2 py-1 rounded shadow-md">
+                                                                {currentTime.format("HH:mm")}
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex-1 h-0.5 bg-red-500 shadow-sm"></div>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>

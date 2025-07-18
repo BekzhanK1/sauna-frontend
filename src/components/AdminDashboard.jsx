@@ -222,10 +222,18 @@ export default function AdminDashboard() {
 
     return (
         <div className="flex h-screen bg-gray-50">
-            <Sidebar activeTab={activeTab} setActiveTab={handleTabChange} logout={logout} user={user} />
+            <Sidebar
+                activeTab={activeTab}
+                setActiveTab={handleTabChange}
+                logout={logout}
+                user={user}
+                navigate={navigate}
+            />
 
-            <div className="flex-1 p-8 overflow-y-auto bg-gray-50">
-                <h1 className="text-2xl font-semibold text-gray-900 mb-6">Добро пожаловать, {user.username}</h1>
+            <div className="flex-1 p-4 md:p-8 overflow-y-auto bg-gray-50 pb-20 md:pb-8">
+                <h1 className="text-xl md:text-2xl font-semibold text-gray-900 mb-4 md:mb-6">
+                    Добро пожаловать, {user.username}
+                </h1>
 
                 {activeTab === "users" && user.role === "superadmin" && (
                     <UserList

@@ -45,10 +45,18 @@ export default function RoomsPage() {
         setRoomDetails({
             id: null,
             room_number: "",
-            capacity: 1,
+            capacity: "1",
             price_per_hour: "",
+            holiday_price_per_hour: "",
+            is_bathhouse: false,
+            is_sauna: false,
             is_available: true,
             has_pool: false,
+            has_recreation_area: false,
+            has_steam_room: false,
+            has_washing_area: false,
+            heated_by_wood: false,
+            heated_by_coal: false,
             bathhouse: bathhouseId
         });
     };
@@ -59,8 +67,16 @@ export default function RoomsPage() {
             room_number: room.room_number,
             capacity: room.capacity,
             price_per_hour: room.price_per_hour,
+            holiday_price_per_hour: room.holiday_price_per_hour,
+            is_bathhouse: room.is_bathhouse,
+            is_sauna: room.is_sauna,
             is_available: room.is_available,
             has_pool: room.has_pool,
+            has_recreation_area: room.has_recreation_area,
+            has_steam_room: room.has_steam_room,
+            has_washing_area: room.has_washing_area,
+            heated_by_wood: room.heated_by_wood,
+            heated_by_coal: room.heated_by_coal,
             bathhouse: room.bathhouse
         });
         setIsUpdate(true);

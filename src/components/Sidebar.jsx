@@ -8,6 +8,8 @@ import {
     LogOut,
     Calendar,
     BarChart,
+    Menu,
+    X,
 } from "lucide-react";
 
 export default function Sidebar({ activeTab, setActiveTab, logout, user, bathhouseID, navigate }) {
@@ -15,6 +17,7 @@ export default function Sidebar({ activeTab, setActiveTab, logout, user, bathhou
         const saved = localStorage.getItem("sidebarCollapsed");
         return saved === "true";
     });
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     useEffect(() => {
         localStorage.setItem("sidebarCollapsed", collapsed);
@@ -24,116 +27,213 @@ export default function Sidebar({ activeTab, setActiveTab, logout, user, bathhou
         `flex items-center py-2 px-3 rounded-md mb-2 w-full overflow-hidden transition 
         ${isActive ? "bg-green-500 text-white" : "text-gray-700 hover:bg-green-100 hover:text-green-600"}`;
 
+    const mobileNavButtonClass = (isActive) =>
+        `flex flex-col items-center justify-center py-2 px-3 rounded-md transition min-w-0 flex-1
+        ${isActive ? "bg-green-500 text-white" : "text-gray-700 hover:bg-green-100 hover:text-green-600"}`;
+
+    const handleTabClick = (tab) => {
+        if (bathhouseID) {
+            navigate(`/dashboard?tab=${tab}`);
+            return;
+        }
+        setActiveTab(tab);
+        setMobileMenuOpen(false); // Close mobile menu after selection
+    };
+
+    const handleRoomsClick = () => {
+        navigate(`/dashboard/rooms?bathhouse_id=${bathhouseID}`);
+        setActiveTab("rooms");
+        setMobileMenuOpen(false);
+    };
+
+    const handleMenuClick = () => {
+        navigate(`/dashboard/menu?bathhouse_id=${bathhouseID}`);
+        setActiveTab("menu");
+        setMobileMenuOpen(false);
+    };
+
+    const handleLogout = () => {
+        logout();
+        setMobileMenuOpen(false);
+    };
+
     return (
-        <div
-            className={`bg-white shadow-lg p-4 flex flex-col transition-all duration-300 ease-in-out
-      ${collapsed ? "w-20" : "w-64"}`}
-        >
-            <div className="flex items-center justify-between mb-6">
-                {!collapsed && (
-                    <h2 className="text-xl font-bold text-gray-900 whitespace-nowrap">
-                        {user.role === "superadmin" ? "Администратор" : "Администратор бани"}
-                    </h2>
+        <>
+            {/* Desktop Sidebar */}
+            <div
+                className={`hidden md:flex bg-white shadow-lg p-4 flex-col transition-all duration-300 ease-in-out
+                ${collapsed ? "w-20" : "w-64"}`}
+            >
+                <div className="flex items-center justify-between mb-6">
+                    {!collapsed && (
+                        <h2 className="text-xl font-bold text-gray-900 whitespace-nowrap">
+                            {user.role === "superadmin" ? "Администратор" : "Администратор бани"}
+                        </h2>
+                    )}
+                    <button
+                        onClick={() => setCollapsed(!collapsed)}
+                        className="ml-auto p-1 rounded hover:bg-gray-200 transition"
+                    >
+                        {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+                    </button>
+                </div>
+
+                {user.role === "superadmin" && (
+                    <button
+                        onClick={() => handleTabClick("users")}
+                        className={navButtonClass(activeTab === "users")}
+                    >
+                        <User className="w-5 h-5 mr-2" />
+                        {!collapsed && "Пользователи"}
+                    </button>
                 )}
+
                 <button
-                    onClick={() => setCollapsed(!collapsed)}
-                    className="ml-auto p-1 rounded hover:bg-gray-200 transition"
+                    onClick={() => handleTabClick("bathhouses")}
+                    className={navButtonClass(activeTab === "bathhouses")}
                 >
-                    {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+                    <Building2 className="w-5 h-5 mr-2" />
+                    {!collapsed && "Банные комплексы"}
+                </button>
+
+                <button
+                    onClick={() => handleTabClick("bookings")}
+                    className={navButtonClass(activeTab === "bookings")}
+                >
+                    <Calendar className="w-5 h-5 mr-2" />
+                    {!collapsed && "Бронирования"}
+                </button>
+
+                <button
+                    onClick={() => handleTabClick("analytics")}
+                    className={navButtonClass(activeTab === "analytics")}
+                >
+                    <BarChart className="w-5 h-5 mr-2" />
+                    {!collapsed && "Аналитика"}
+                </button>
+
+                {bathhouseID && (
+                    <button
+                        onClick={handleRoomsClick}
+                        className={navButtonClass(activeTab === "rooms")}
+                    >
+                        <DoorClosed className="w-5 h-5 mr-2" />
+                        {!collapsed && "Сауны/Бани"}
+                    </button>
+                )}
+
+                {bathhouseID && (
+                    <button
+                        onClick={handleMenuClick}
+                        className={navButtonClass(activeTab === "menu")}
+                    >
+                        <DoorClosed className="w-5 h-5 mr-2" />
+                        {!collapsed && "Сервис и товары"}
+                    </button>
+                )}
+
+                <button
+                    onClick={handleLogout}
+                    className="mt-auto flex items-center bg-red-500 text-white py-2 px-3 rounded-md hover:bg-red-600 transition w-full"
+                >
+                    <LogOut className="w-5 h-5 mr-2" />
+                    {!collapsed && "Выйти"}
                 </button>
             </div>
 
-            {user.role === "superadmin" && (
-                <button
-                    onClick={() => {
-                        if (bathhouseID) {
-                            navigate(`/dashboard?tab=users`);
-                            return;
-                        }
-                        setActiveTab("users");
-                    }}
-                    className={navButtonClass(activeTab === "users")}
-                >
-                    <User className="w-5 h-5 mr-2" />
-                    {!collapsed && "Пользователи"}
-                </button>
-            )}
+            {/* Mobile Bottom Navigation */}
+            <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t z-50">
+                <div className="flex items-center justify-between px-2 py-2">
+                    {/* Main navigation items */}
+                    <div className="flex flex-1 justify-around">
+                        {user.role === "superadmin" && (
+                            <button
+                                onClick={() => handleTabClick("users")}
+                                className={mobileNavButtonClass(activeTab === "users")}
+                            >
+                                <User className="w-5 h-5 mb-1" />
+                                <span className="text-xs">Пользователи</span>
+                            </button>
+                        )}
 
-            <button
-                onClick={() => {
-                    if (bathhouseID) {
-                        navigate(`/dashboard?tab=bathhouses`);
-                        return;
-                    }
-                    setActiveTab("bathhouses");
-                }}
-                className={navButtonClass(activeTab === "bathhouses")}
-            >
-                <Building2 className="w-5 h-5 mr-2" />
-                {!collapsed && "Банные комплексы"}
-            </button>
+                        <button
+                            onClick={() => handleTabClick("bathhouses")}
+                            className={mobileNavButtonClass(activeTab === "bathhouses")}
+                        >
+                            <Building2 className="w-5 h-5 mb-1" />
+                            <span className="text-xs">Комплексы</span>
+                        </button>
 
-            <button
-                onClick={() => {
-                    if (bathhouseID) {
-                        navigate(`/dashboard?tab=bookings`);
-                        return;
-                    }
-                    setActiveTab("bookings");
-                }}
-                className={navButtonClass(activeTab === "bookings")}
-            >
-                <Calendar className="w-5 h-5 mr-2" />
-                {!collapsed && "Бронирования"}
-            </button>
+                        <button
+                            onClick={() => handleTabClick("bookings")}
+                            className={mobileNavButtonClass(activeTab === "bookings")}
+                        >
+                            <Calendar className="w-5 h-5 mb-1" />
+                            <span className="text-xs">Бронирования</span>
+                        </button>
 
-            <button
-                onClick={() => {
-                    if (bathhouseID) {
-                        navigate(`/dashboard?tab=analytics`);
-                        return;
-                    }
-                    setActiveTab("analytics");
-                }}
-                className={navButtonClass(activeTab === "analytics")}
-            >
-                <BarChart className="w-5 h-5 mr-2" />
-                {!collapsed && "Аналитика"}
-            </button>
+                        <button
+                            onClick={() => handleTabClick("analytics")}
+                            className={mobileNavButtonClass(activeTab === "analytics")}
+                        >
+                            <BarChart className="w-5 h-5 mb-1" />
+                            <span className="text-xs">Аналитика</span>
+                        </button>
 
-            {bathhouseID && (
-                <button
-                    onClick={() => {
-                        navigate(`/dashboard/rooms?bathhouse_id=${bathhouseID}`);
-                        setActiveTab("rooms");
-                    }}
-                    className={navButtonClass(activeTab === "rooms")}
-                >
-                    <DoorClosed className="w-5 h-5 mr-2" />
-                    {!collapsed && "Сауны/Бани"}
-                </button>
-            )}
+                        {/* More menu button */}
+                        <button
+                            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                            className={mobileNavButtonClass(false)}
+                        >
+                            {mobileMenuOpen ? (
+                                <X className="w-5 h-5 mb-1" />
+                            ) : (
+                                <Menu className="w-5 h-5 mb-1" />
+                            )}
+                            <span className="text-xs">Меню</span>
+                        </button>
+                    </div>
+                </div>
 
-            {bathhouseID && (
-                <button
-                    onClick={() => {
-                        navigate(`/dashboard/menu?bathhouse_id=${bathhouseID}`);
-                        setActiveTab("menu");
-                    }}
-                    className={navButtonClass(activeTab === "menu")}
-                >
-                    <DoorClosed className="w-5 h-5 mr-2" />
-                    {!collapsed && "Сервис и товары"}
-                </button>
-            )}
-
-            <button
-                onClick={logout}
-                className="mt-auto flex items-center bg-red-500 text-white py-2 px-3 rounded-md hover:bg-red-600 transition w-full"
-            >
-                <LogOut className="w-5 h-5 mr-2" />
-                {!collapsed && "Выйти"}
-            </button>
-        </div>
+                {/* Mobile expanded menu */}
+                {mobileMenuOpen && (
+                    <div className="absolute bottom-full left-0 right-0 bg-white border-t shadow-lg">
+                        <div className="p-4 space-y-2">
+                            {bathhouseID && (
+                                <>
+                                    <button
+                                        onClick={handleRoomsClick}
+                                        className={`flex items-center w-full py-2 px-3 rounded-md transition ${activeTab === "rooms"
+                                            ? "bg-green-500 text-white"
+                                            : "text-gray-700 hover:bg-green-100 hover:text-green-600"
+                                            }`}
+                                    >
+                                        <DoorClosed className="w-5 h-5 mr-2" />
+                                        Сауны/Бани
+                                    </button>
+                                    <button
+                                        onClick={handleMenuClick}
+                                        className={`flex items-center w-full py-2 px-3 rounded-md transition ${activeTab === "menu"
+                                            ? "bg-green-500 text-white"
+                                            : "text-gray-700 hover:bg-green-100 hover:text-green-600"
+                                            }`}
+                                    >
+                                        <DoorClosed className="w-5 h-5 mr-2" />
+                                        Сервис и товары
+                                    </button>
+                                </>
+                            )}
+                            <button
+                                onClick={handleLogout}
+                                className="flex items-center w-full bg-red-500 text-white py-2 px-3 rounded-md hover:bg-red-600 transition"
+                            >
+                                <LogOut className="w-5 h-5 mr-2" />
+                                Выйти
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </>
     );
 }
