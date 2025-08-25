@@ -1,4 +1,6 @@
 import { useContext } from "react";
+import { Link } from "react-router-dom";
+import vparuBlackLogo from "./assets/vparu-logo-black.png"
 import { AuthContext } from "./auth/AuthContext";
 import LoginPage from "./auth/LoginPage";
 import AdminDashboard from "./components/AdminDashboard";
@@ -19,7 +21,14 @@ function App() {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold text-center mb-6">Qbooking</h1>
+      {/* <h1 className="text-3xl font-bold text-center mb-6">Qbooking</h1> */}
+      <header className="bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 mb-6">
+          <Link to="/booking" className="inline-block">
+            <img src={vparuBlackLogo} alt="Logo" className="h-8 w-auto" />
+          </Link>
+        </div>
+      </header>
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/booking" element={<BookingPage />} />

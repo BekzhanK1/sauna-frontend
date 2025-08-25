@@ -3,7 +3,7 @@ import { unauthenticatedApi } from "../api/axios";
 import {
     Calendar, Clock, MapPin, Star, Plus, Minus, ShoppingCart,
     User, Phone, Mail, CreditCard,
-    ShieldCheck, KeyRound, CheckCircle2, X, RotateCcw
+    ShieldCheck, KeyRound, CheckCircle2, X, RotateCcw, Search
 } from "lucide-react";
 
 import { Waves, Sofa, Flame, ShowerHead, TreePine } from "lucide-react";
@@ -41,6 +41,7 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
     const [currentRoomBookings, setCurrentRoomBookings] = useState([]);
     const [countdown, setCountdown] = useState(null);
     const [countdownInterval, setCountdownInterval] = useState(null);
+    const [query, setQuery] = useState("");
 
     const navigate = useNavigate();
 
@@ -336,6 +337,9 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
     };
 
     const days = getDays();
+    const filteredBathhouses = bathhouses.filter((b) =>
+        (b.name || "").toLowerCase().includes(query.trim().toLowerCase())
+    );
 
     const handleItemQuantityChange = (itemId, quantity) => {
         setSelectedItems((prev) => {
@@ -422,13 +426,32 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-                {/* Header */}
+                {!singleBathhouse && (
+                    <div className="flex items-center justify-between gap-4">
+
+                        <div className="relative w-full max-w-md">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                            <input
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                                placeholder="Поиск по названию…"
+                                className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                        </div>
+                    </div>
+                )}
+
                 {singleBathhouse && (
                     <div className="bg-white shadow-sm sticky top-0 z-40 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
                         <div className="max-w-7xl mx-auto py-4">
                             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                                 <div className="flex items-center gap-4">
-                                    <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Бронирование</h1>
+                                    <button
+                                        onClick={() => navigate("/booking")}
+                                        className="bg-green-500 text-white px-6 py-3 rounded-md font-medium hover:bg-green-600 transition"
+                                    >
+                                        Назад
+                                    </button>
                                     {isTimeSelected && (
                                         <button
                                             onClick={resetSelections}
@@ -458,12 +481,12 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                     </div>
                 )}
 
-                <div className="space-y-6 mt-6">
-                    {bathhouses.map((bathhouse) => (
+                <div className={`space-y-6 mt-6 ${!singleBathhouse ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6" : ""}`}>
+                    {filteredBathhouses.map((bathhouse) => (
                         <div key={bathhouse.id} className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
                             <button
                                 onClick={() => toggleBathhouse(bathhouse.id)}
-                                className="w-full text-left p-4 sm:p-6 hover:bg-gray-50 transition-colors"
+                                className="w-full text-left p-4 sm:p-6 hover:bg-gray-50 transition-colors flex-1 flex flex-col justify-between"
                             >
                                 <div className="flex items-center justify-between">
                                     <div className="flex-1">

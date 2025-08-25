@@ -285,82 +285,96 @@ export default function BookingList() {
                             {viewMode === "timetable" ? (
                                 <div className="relative border rounded overflow-hidden bg-white shadow mt-4">
                                     <div className="flex">
-                                        <div className="w-20 border-r bg-gray-50">
+                                        {/* Fixed time column */}
+                                        <div className="w-20 border-r bg-gray-50 flex-shrink-0 sticky left-0 z-10">
                                             <div className="border-b text-xs text-gray-500 flex items-center justify-end pr-2" style={{ height: `${slotHeight}px` }}>Время</div>
                                             {timeSlots.map(slot => (
                                                 <div key={slot.time} className="border-b text-xs text-gray-500 flex items-center justify-end pr-2" style={{ height: `${slotHeight}px` }}>{slot.time}</div>
                                             ))}
                                         </div>
-                                        <div className="flex-1 flex relative">
-                                            {rooms.map(room => (
-                                                <div key={room.id} className="flex-1 border-r relative">
-                                                    <div className="text-center p-2 border-b bg-gray-50" style={{ height: `${headerHeight}px` }}>
-                                                        <div className="font-medium">{room.is_sauna ? "Сауна" : room.is_bathhouse ? "Баня" : "Комната"} #{room.room_number}</div>
-                                                        <div className="text-xs text-gray-500">{room.capacity} чел.</div>
-                                                    </div>
-                                                    <div className="relative" style={{ height: `${timeSlots.length * slotHeight}px` }}>
-                                                        {bookingsForCurrentDate
-                                                            .filter(b => b.room.id === room.id)
-                                                            .map(booking => {
-                                                                const start = dayjs(booking.start_time);
-                                                                const startHour = start.hour();
-                                                                const startMinutes = start.minute();
 
-                                                                // Calculate position based on bathhouse working hours
-                                                                const bathhouseStart = dayjs(`2000-01-01 ${selectedBathhouse.start_of_work}`);
-                                                                const bathhouseEnd = dayjs(`2000-01-01 ${selectedBathhouse.end_of_work}`);
-                                                                const isOvernight = bathhouseEnd.isBefore(bathhouseStart) || bathhouseEnd.isSame(bathhouseStart);
-
-                                                                let slotPosition = 0;
-                                                                if (isOvernight) {
-                                                                    if (startHour >= bathhouseStart.hour()) {
-                                                                        slotPosition = startHour - bathhouseStart.hour();
-                                                                    } else {
-                                                                        slotPosition = (24 - bathhouseStart.hour()) + startHour;
-                                                                    }
-                                                                } else {
-                                                                    slotPosition = startHour - bathhouseStart.hour();
-                                                                }
-
-                                                                const topOffset = (slotPosition * slotHeight) + (startMinutes / 60) * slotHeight;
-                                                                const height = booking.hours * slotHeight;
-
-
-                                                                return (
-                                                                    <div
-                                                                        key={booking.id}
-                                                                        className="absolute left-1 right-1 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded shadow-md p-2 text-xs cursor-pointer hover:scale-[1.02] transition"
-                                                                        style={{ top: `${topOffset}px`, height: `${height}px` }}
-                                                                        onClick={() => setSelectedBooking(booking)}
-                                                                    >
-                                                                        <div className="font-semibold truncate">{booking.name}</div>
-                                                                        <div className="truncate">{booking.phone}</div>
-                                                                        <div className="truncate">{dayjs(booking.start_time).format("HH:mm")} - {dayjs(booking.start_time).add(booking.hours, 'hour').format("HH:mm")}</div>
-                                                                        <div>{booking.hours} ч • {parseInt(booking.final_price).toLocaleString('ru-RU')} ₸</div>
-                                                                    </div>
-                                                                );
-                                                            })}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                            {/* Current time line */}
-                                            {getCurrentTimeLinePosition() !== null && (
-                                                <div
-                                                    className="absolute left-0 right-0 z-10 pointer-events-none"
-                                                    style={{ top: `${headerHeight + getCurrentTimeLinePosition()}px` }}
-                                                >
-                                                    <div className="flex items-center">
-                                                        <div className="w-20 flex justify-end pr-2">
-                                                            <div className="bg-red-500 text-white text-xs px-2 py-1 rounded shadow-md">
-                                                                {currentTime.format("HH:mm")}
-                                                            </div>
+                                        {/* Scrollable rooms container */}
+                                        <div className="flex-1 overflow-x-auto">
+                                            <div className="flex relative" style={{ minWidth: `${rooms.length * 200}px` }}>
+                                                {rooms.map(room => (
+                                                    <div key={room.id} className="w-48 border-r relative flex-shrink-0">
+                                                        <div className="text-center p-2 border-b bg-gray-50" style={{ height: `${headerHeight}px` }}>
+                                                            <div className="font-medium">{room.is_sauna ? "Сауна" : room.is_bathhouse ? "Баня" : "Комната"} #{room.room_number}</div>
+                                                            <div className="text-xs text-gray-500">{room.capacity} чел.</div>
                                                         </div>
-                                                        <div className="flex-1 h-0.5 bg-red-500 shadow-sm"></div>
+                                                        <div className="relative" style={{ height: `${timeSlots.length * slotHeight}px` }}>
+                                                            {bookingsForCurrentDate
+                                                                .filter(b => b.room.id === room.id)
+                                                                .map(booking => {
+                                                                    const start = dayjs(booking.start_time);
+                                                                    const startHour = start.hour();
+                                                                    const startMinutes = start.minute();
+
+                                                                    // Calculate position based on bathhouse working hours
+                                                                    const bathhouseStart = dayjs(`2000-01-01 ${selectedBathhouse.start_of_work}`);
+                                                                    const bathhouseEnd = dayjs(`2000-01-01 ${selectedBathhouse.end_of_work}`);
+                                                                    const isOvernight = bathhouseEnd.isBefore(bathhouseStart) || bathhouseEnd.isSame(bathhouseStart);
+
+                                                                    let slotPosition = 0;
+                                                                    if (isOvernight) {
+                                                                        if (startHour >= bathhouseStart.hour()) {
+                                                                            slotPosition = startHour - bathhouseStart.hour();
+                                                                        } else {
+                                                                            slotPosition = (24 - bathhouseStart.hour()) + startHour;
+                                                                        }
+                                                                    } else {
+                                                                        slotPosition = startHour - bathhouseStart.hour();
+                                                                    }
+
+                                                                    const topOffset = (slotPosition * slotHeight) + (startMinutes / 60) * slotHeight;
+                                                                    const height = booking.hours * slotHeight;
+
+                                                                    return (
+                                                                        <div
+                                                                            key={booking.id}
+                                                                            className="absolute left-1 right-1 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded shadow-md p-2 text-xs cursor-pointer hover:scale-[1.02] transition"
+                                                                            style={{ top: `${topOffset}px`, height: `${height}px` }}
+                                                                            onClick={() => setSelectedBooking(booking)}
+                                                                        >
+                                                                            <div className="font-semibold truncate">{booking.name}</div>
+                                                                            <div className="truncate">{booking.phone}</div>
+                                                                            <div className="truncate">{dayjs(booking.start_time).format("HH:mm")} - {dayjs(booking.start_time).add(booking.hours, 'hour').format("HH:mm")}</div>
+                                                                            <div>{booking.hours} ч • {parseInt(booking.final_price).toLocaleString('ru-RU')} ₸</div>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            )}
+                                                ))}
+
+                                                {/* Current time line - adjusted for scrollable container */}
+                                                {getCurrentTimeLinePosition() !== null && (
+                                                    <div
+                                                        className="absolute left-0 right-0 z-10 pointer-events-none"
+                                                        style={{ top: `${headerHeight + getCurrentTimeLinePosition()}px` }}
+                                                    >
+                                                        <div className="flex items-center">
+                                                            <div className="flex-1 h-0.5 bg-red-500 shadow-sm"></div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
+
+                                    {/* Current time indicator - repositioned outside scrollable area */}
+                                    {getCurrentTimeLinePosition() !== null && (
+                                        <div
+                                            className="absolute left-0 z-20 pointer-events-none"
+                                            style={{ top: `${headerHeight + getCurrentTimeLinePosition()}px` }}
+                                        >
+                                            <div className="w-20 flex justify-end pr-2">
+                                                <div className="bg-red-500 text-white text-xs px-2 py-1 rounded shadow-md">
+                                                    {currentTime.format("HH:mm")}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             ) : (
                                 <div className="overflow-x-auto mt-4 bg-white border rounded shadow">
