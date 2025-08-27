@@ -260,20 +260,37 @@ export default function BookingList() {
                         >
                             Классическая таблица
                         </button>
-                        <button
-                            onClick={async () => {
-                                try {
-                                    await fetchBookings(selectedBathhouse.id);
-                                    toast.success("Список бронирований обновлен");
-                                } catch (err) {
-                                    toast.error("Не удалось обновить список бронирований");
-                                }
-                            }}
-                            className="ml-auto px-3 py-1 border rounded text-sm text-gray-700 bg-white hover:bg-blue-50 transition"
-                            disabled={loading}
-                        >
-                            🔄 Обновить
-                        </button>
+
+                        <div className="ml-auto flex gap-2">
+                            <button
+                                onClick={async () => {
+                                    try {
+                                        // await fetchBookings(selectedBathhouse.id);
+                                        toast.success("Добавление бронирования");
+                                    } catch (err) {
+                                        toast.error("Не удалось добавить бронирование");
+                                    }
+                                }}
+                                className="px-3 py-1 border rounded text-sm text-gray-700 bg-white hover:bg-blue-50 transition"
+                                disabled={loading}
+                            >
+                                ➕ Добавить бронирование
+                            </button>
+                            <button
+                                onClick={async () => {
+                                    try {
+                                        await fetchBookings(selectedBathhouse.id);
+                                        toast.success("Список бронирований обновлен");
+                                    } catch (err) {
+                                        toast.error("Не удалось обновить список бронирований");
+                                    }
+                                }}
+                                className="ml-auto px-3 py-1 border rounded text-sm text-gray-700 bg-white hover:bg-blue-50 transition"
+                                disabled={loading}
+                            >
+                                🔄 Обновить
+                            </button>
+                        </div>
                     </div>
 
                     {loading ? (
