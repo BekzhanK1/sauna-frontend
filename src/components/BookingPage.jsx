@@ -447,7 +447,7 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                                 <div className="flex items-center gap-4">
                                     <button
-                                        onClick={() => navigate("/booking")}
+                                        onClick={() => window.location.href = "https://vparu.kz"}
                                         className="bg-green-500 text-white px-6 py-3 rounded-md font-medium hover:bg-green-600 transition"
                                     >
                                         Назад
