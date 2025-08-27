@@ -36,7 +36,6 @@ jobs:
             git checkout main || git checkout -b main
             git pull origin main
             docker compose up --build -d
-            docker system prune -f || true
 
       # pull a short image-size summary from the server (best-effort)
       - name: Gather Docker image sizes (SSH)
@@ -90,13 +89,14 @@ jobs:
             IMG_BLOCK="<pre>${IMG_SUMMARY}</pre>"
           fi
 
-          TEXT="$ICON <b>$TITLE</b>\n
-                <b>Проект:</b> <code>$REPO</code>\n
-                <b>Ветка:</b> <code>$REF</code>\n
-                <b>Коммит:</b> <code>$SHORT_SHA</code>\n
-                <b>Длительность:</b> <code>$D_HMS</code>\n
-                <b>Образы Docker:</b>\n${IMG_BLOCK}\n
-                <b>Логи:</b> <a href=\"$RUN_URL\">запуск GitHub Actions</a>\n
+          TEXT="$ICON <b>$TITLE</b>
+                <b>Проект:</b> <code>$REPO</code>
+                <b>Ветка:</b> <code>$REF</code>
+                <b>Коммит:</b> <code>$SHORT_SHA</code>
+                <b>Длительность:</b> <code>$D_HMS</code>
+                <b>Образы Docker:</b>
+                ${IMG_BLOCK}
+                <b>Логи:</b> <a href=\"$RUN_URL\">запуск GitHub Actions</a>
                 <i>Автоматизированное развертывание через GitHub Actions и Docker Compose завершено. Система уведомлений работает в штатном режиме.</i>"
 
           curl -sS -X POST "https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage" \
