@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useMemo } from "react";
 import { AuthContext } from "../auth/AuthContext";
 import api from "../api/axios";
 import API_URLS from "../api/config";
@@ -19,6 +19,7 @@ export default function BookingList() {
     const [selectedBooking, setSelectedBooking] = useState(null);
     const [viewMode, setViewMode] = useState("table");
     const [currentTime, setCurrentTime] = useState(dayjs());
+    const [bookingsForCurrentDate, setBookingsForCurrentDate] = useState([]);
 
     // Manual booking states
     const [showCreateBookingModal, setShowCreateBookingModal] = useState(false);
@@ -50,6 +51,14 @@ export default function BookingList() {
         return () => clearInterval(interval);
     }, []);
 
+
+    useEffect(() => {
+        const filtered = bookings.filter((b) =>
+            dayjs(b.start_time).isSame(currentDate, "day")
+        );
+        setBookingsForCurrentDate(filtered);
+        console.log(bookings)
+    }, [bookings, currentDate]);
     const fetchBathhouses = async () => {
         try {
             setLoadingBathhouses(true);
@@ -69,8 +78,10 @@ export default function BookingList() {
 
     const fetchBookings = async (bathhouseId) => {
         try {
+            console.log("Fetching bookings for bathhouse ID:", bathhouseId);
             setLoading(true);
             const res = await api.get(`${API_URLS.bookings}?bathhouse_id=${bathhouseId}`);
+            console.log("Fetched bookings:", res.data);
             setBookings(res.data);
         } catch (err) {
             toast.error("Не удалось загрузить бронирования");
@@ -156,14 +167,30 @@ export default function BookingList() {
         if (!selectedBathhouse) return [];
 
         const slots = [];
+
+        // Handle 24/7 case - check the is_24_hours flag
+        if (selectedBathhouse.is_24_hours) {
+            for (let hour = 0; hour < 24; hour++) {
+                slots.push({
+                    time: `${hour.toString().padStart(2, '0')}:00`,
+                    hour: hour,
+                    slotIndex: hour
+                });
+            }
+            return slots;
+        }
+
+        // Regular hours logic
         const startTime = dayjs(`2000-01-01 ${selectedBathhouse.start_of_work}`);
         const endTime = dayjs(`2000-01-01 ${selectedBathhouse.end_of_work}`);
-        const isOvernight = endTime.isBefore(startTime) || endTime.isSame(startTime);
+        const isOvernight = endTime.isBefore(startTime);
 
         let currentSlot = startTime;
         let slotIndex = 0;
 
         while (true) {
+            if (!currentSlot.isValid()) break;
+
             const hour = currentSlot.hour();
             slots.push({
                 time: `${hour.toString().padStart(2, '0')}:00`,
@@ -322,40 +349,58 @@ export default function BookingList() {
     };
 
     const generateBookingTimeSlots = () => {
-        if (!selectedBathhouse || !selectedRoom) return [];
+        if (!selectedBathhouse) return [];
 
         const slots = [];
-        const startTime = dayjs(`2000-01-01 ${selectedBathhouse.start_of_work}`);
-        const endTime = dayjs(`2000-01-01 ${selectedBathhouse.end_of_work}`);
-        const isOvernight = endTime.isBefore(startTime) || endTime.isSame(startTime);
 
-        let currentSlot = startTime;
-        let slotIndex = 0;
+        // Handle 24/7 case - check the is_24_hours flag
+        console.log("Selected Bathhouse:", selectedBathhouse);
+        if (selectedBathhouse.is_24_hours) {
+            for (let hour = 0; hour < 24; hour++) {
+                const slotDateTime = selectedBookingDate.hour(hour).minute(0).second(0);
+                slots.push({
+                    time: `${hour.toString().padStart(2, '0')}:00`,
+                    hour,
+                    slotIndex: hour,
+                    dateTime: slotDateTime
+                });
+            }
+        } else {
+            // Regular hours logic (your existing code)
+            const startTime = dayjs(`2000-01-01 ${selectedBathhouse.start_of_work}`);
+            const endTime = dayjs(`2000-01-01 ${selectedBathhouse.end_of_work}`);
+            const isOvernight = endTime.isBefore(startTime);
 
-        while (true) {
-            const hour = currentSlot.hour();
-            const slotDateTime = selectedBookingDate.hour(hour).minute(0).second(0);
+            let currentSlot = startTime;
+            let slotIndex = 0;
 
-            slots.push({
-                time: `${hour.toString().padStart(2, '0')}:00`,
-                hour,
-                slotIndex,
-                dateTime: slotDateTime
-            });
+            while (true) {
+                if (!currentSlot.isValid()) break;
 
-            currentSlot = currentSlot.add(1, 'hour');
-            slotIndex++;
+                const hour = currentSlot.hour();
+                const slotDateTime = selectedBookingDate.hour(hour).minute(0).second(0);
 
-            if (isOvernight) {
-                if (currentSlot.hour() === endTime.hour() && slotIndex > 1) break;
-                if (slotIndex >= 24) break;
-            } else {
-                if (currentSlot.hour() === endTime.hour()) break;
-                if (slotIndex >= 24) break;
+                slots.push({
+                    time: `${hour.toString().padStart(2, '0')}:00`,
+                    hour,
+                    slotIndex,
+                    dateTime: slotDateTime
+                });
+
+                currentSlot = currentSlot.add(1, 'hour');
+                slotIndex++;
+
+                if (isOvernight) {
+                    if (currentSlot.hour() === endTime.hour() && slotIndex > 1) break;
+                    if (slotIndex >= 24) break;
+                } else {
+                    if (currentSlot.hour() === endTime.hour()) break;
+                    if (slotIndex >= 24) break;
+                }
             }
         }
 
-        // ⬇️ NEW: for today, keep only slots from the next whole hour and later
+        // Filter for today - keep only slots from the next whole hour and later
         const now = dayjs();
         if (selectedBookingDate.isSame(now, 'day')) {
             const cutoff = now.add(1, 'hour').startOf('hour');
@@ -388,10 +433,6 @@ export default function BookingList() {
     }
 
     // Rest of the original component logic...
-    const bookingsForCurrentDate = bookings.filter((b) =>
-        dayjs(b.start_time).isSame(currentDate, "day")
-    );
-
     const goToPreviousDay = () => setCurrentDate(currentDate.subtract(1, "day"));
     const goToNextDay = () => setCurrentDate(currentDate.add(1, "day"));
     const goToToday = () => setCurrentDate(dayjs());

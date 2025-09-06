@@ -24,6 +24,7 @@ export default function BathhouseModal({
             description: "",
             phone: "",
             is_24_hours: false,
+            bonus_percentage: null,
             start_of_work: "",
             end_of_work: "",
         });
@@ -90,6 +91,17 @@ export default function BathhouseModal({
                         placeholder="+7..."
                         value={bathhouseDetails.phone}
                         onChange={(e) => handlePhoneChange(e.target.value)}
+                        className="border border-gray-300 p-2 rounded-md w-full mb-3 focus:outline-none focus:ring-2 focus:ring-green-500"
+                    />
+
+                    {/* Bonus System percentage */}
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Процент бонусной системы</label>
+                    <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={bathhouseDetails.bonus_percentage || ""}
+                        onChange={(e) => setBathhouseDetails({ ...bathhouseDetails, bonus_percentage: e.target.value })}
                         className="border border-gray-300 p-2 rounded-md w-full mb-3 focus:outline-none focus:ring-2 focus:ring-green-500"
                     />
 

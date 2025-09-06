@@ -6,6 +6,7 @@ import LoginPage from "./auth/LoginPage";
 import AdminDashboard from "./components/AdminDashboard";
 import RoomsPage from "./components/RoomsPage";
 import MenuPage from "./components/MenuPage";
+import BonusSystem from "./components/BonusSystem";
 import HomePage from "./components/HomePage";
 import NotFoundPage from "./components/NotFoundPage";
 import ProtectedRoute from "./auth/ProtectedRoute";
@@ -55,6 +56,14 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={["superadmin", "bath_admin"]}>
               <MenuPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/bonus-system"
+          element={
+            <ProtectedRoute allowedRoles={["superadmin", "bath_admin"]}>
+              <BonusSystem />
             </ProtectedRoute>
           }
         />

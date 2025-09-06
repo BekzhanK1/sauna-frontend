@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import {
     ChevronLeft,
     ChevronRight,
@@ -10,7 +10,11 @@ import {
     BarChart,
     Menu,
     X,
+    Gift,
+    Coffee
 } from "lucide-react";
+import api from '../api/axios';
+import API_URLS from '../api/config';
 
 export default function Sidebar({ activeTab, setActiveTab, logout, user, bathhouseID, navigate }) {
     const [collapsed, setCollapsed] = useState(() => {
@@ -18,10 +22,26 @@ export default function Sidebar({ activeTab, setActiveTab, logout, user, bathhou
         return saved === "true";
     });
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [bathhouse, setBathhouse] = useState(null);
 
     useEffect(() => {
         localStorage.setItem("sidebarCollapsed", collapsed);
     }, [collapsed]);
+
+    useEffect(() => {
+        const fetchBathhouse = async (bathhouseID) => {
+            try {
+                const response = await api.get(`${API_URLS.bathhouses}${bathhouseID}`);
+                setBathhouse(response.data);
+                console.log("Fetched bathhouse:", response.data);
+            } catch (error) {
+                console.error("Error fetching bathhouse:", error);
+            }
+        };
+        if (bathhouseID) {
+            fetchBathhouse(bathhouseID);
+        }
+    }, [bathhouseID]);
 
     const navButtonClass = (isActive) =>
         `flex items-center py-2 px-3 rounded-md mb-2 w-full overflow-hidden transition 
@@ -51,6 +71,12 @@ export default function Sidebar({ activeTab, setActiveTab, logout, user, bathhou
         setActiveTab("menu");
         setMobileMenuOpen(false);
     };
+
+    const handleBonusSystemClick = () => {
+        navigate(`/dashboard/bonus-system?bathhouse_id=${bathhouseID}`);
+        setActiveTab("bonus-system");
+        setMobileMenuOpen(false);
+    }
 
     const handleLogout = () => {
         logout();
@@ -112,6 +138,17 @@ export default function Sidebar({ activeTab, setActiveTab, logout, user, bathhou
                     {!collapsed && "Аналитика"}
                 </button>
 
+                <div className="border-t my-4"></div>
+
+                {bathhouse && (
+                    <div className={`mb-4 ${collapsed ? "text-center" : ""}`}>
+                        <h3 className="text-sm font-semibold text-gray-500 mb-1">Текущий комплекс:</h3>
+                        <p className="text-lg font-bold text-gray-900 truncate">
+                            {bathhouse.name}
+                        </p>
+                    </div>
+                )}
+
                 {bathhouseID && (
                     <button
                         onClick={handleRoomsClick}
@@ -127,8 +164,18 @@ export default function Sidebar({ activeTab, setActiveTab, logout, user, bathhou
                         onClick={handleMenuClick}
                         className={navButtonClass(activeTab === "menu")}
                     >
-                        <DoorClosed className="w-5 h-5 mr-2" />
+                        <Coffee className="w-5 h-5 mr-2" />
                         {!collapsed && "Сервис и товары"}
+                    </button>
+                )}
+
+                {bathhouseID && (
+                    <button
+                        onClick={handleBonusSystemClick}
+                        className={navButtonClass(activeTab === "bonus-system")}
+                    >
+                        <Gift className="w-5 h-5 mr-2" />
+                        {!collapsed && "Бонусная система"}
                     </button>
                 )}
 
@@ -190,7 +237,7 @@ export default function Sidebar({ activeTab, setActiveTab, logout, user, bathhou
                             ) : (
                                 <Menu className="w-5 h-5 mb-1" />
                             )}
-                            <span className="text-xs">Меню</span>
+                            <span className="text-xs">Управление</span>
                         </button>
                     </div>
                 </div>
@@ -220,6 +267,16 @@ export default function Sidebar({ activeTab, setActiveTab, logout, user, bathhou
                                     >
                                         <DoorClosed className="w-5 h-5 mr-2" />
                                         Сервис и товары
+                                    </button>
+                                    <button
+                                        onClick={handleBonusSystemClick}
+                                        className={`flex items-center w-full py-2 px-3 rounded-md transition ${activeTab === "bonus-system"
+                                            ? "bg-green-500 text-white"
+                                            : "text-gray-700 hover:bg-green-100 hover:text-green-600"
+                                            }`}
+                                    >
+                                        <Gift className="w-5 h-5 mr-2" />
+                                        Бонусная система
                                     </button>
                                 </>
                             )}

@@ -60,6 +60,7 @@ export default function AdminDashboard() {
         is_24_hours: false,
         start_of_work: "",
         end_of_work: "",
+        bonus_percentage: null,
         owner: "",
     });
 
@@ -96,6 +97,7 @@ export default function AdminDashboard() {
             description: bathhouseDetails.description,
             phone: bathhouseDetails.phone,
             is_24_hours: bathhouseDetails.is_24_hours,
+            bonus_percentage: bathhouseDetails.bonus_percentage,
             start_of_work: bathhouseDetails.is_24_hours ? null : (bathhouseDetails.start_of_work || null),
             end_of_work: bathhouseDetails.is_24_hours ? null : (bathhouseDetails.end_of_work || null),
             owner: bathhouseDetails.owner,
@@ -112,6 +114,7 @@ export default function AdminDashboard() {
             is_24_hours: false,
             start_of_work: "",
             end_of_work: "",
+            bonus_percentage: null,
             id: null,
         })
     };
@@ -171,6 +174,7 @@ export default function AdminDashboard() {
             phone: bathhouse.phone,
             is_24_hours: bathhouse.is_24_hours,
             start_of_work: bathhouse.start_of_work,
+            bonus_percentage: bathhouse.bonus_percentage,
             end_of_work: bathhouse.end_of_work,
         });
         setIsUpdate(true);
@@ -218,6 +222,11 @@ export default function AdminDashboard() {
         navigate(`menu?bathhouse_id=${bathhouseId}`);
     };
 
+    const handleBonusSystem = (bathhouseId) => {
+        console.log("Редактировать бонусную систему для сауны ID:", bathhouseId);
+        navigate(`bonus-system?bathhouse_id=${bathhouseId}`);
+    }
+
     if (!user) return <p>Загрузка...</p>;
 
     return (
@@ -251,6 +260,7 @@ export default function AdminDashboard() {
                         onDelete={handleDeleteBathhouse}
                         onEditRooms={handleEditRooms}
                         onEditMenu={handleEditMenu}
+                        onBonusSystem={handleBonusSystem}
                         userRole={user.role}
                     />
                 )}
