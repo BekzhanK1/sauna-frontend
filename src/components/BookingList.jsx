@@ -5,7 +5,7 @@ import API_URLS from "../api/config";
 import toast from "react-hot-toast";
 import dayjs from "dayjs";
 import 'dayjs/locale/ru';
-import { X, Plus, Clock, User, Phone, Calendar, RefreshCw, Eye, EyeOff, ChevronLeft, ChevronRight, Home } from "lucide-react";
+import { X, Plus, Clock, User, Phone, Calendar, RefreshCw, Eye, EyeOff, ChevronLeft, ChevronRight, Home, Play, Pause } from "lucide-react";
 dayjs.locale('ru');
 
 export default function BookingList() {
@@ -42,6 +42,10 @@ export default function BookingList() {
     const [paymentBonusBalance, setPaymentBonusBalance] = useState(null);
     const [paymentRedeemInput, setPaymentRedeemInput] = useState('0');
 
+    // Auto-refresh states
+    const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(false);
+    const [refreshInterval, setRefreshInterval] = useState(null);
+
     const slotHeight = 48;
     const headerHeight = 48;
 
@@ -55,6 +59,50 @@ export default function BookingList() {
         }, 60000);
         return () => clearInterval(interval);
     }, []);
+
+    // Auto-refresh effect
+    useEffect(() => {
+        if (autoRefreshEnabled && selectedBathhouse) {
+            const interval = setInterval(async () => {
+                try {
+                    await fetchBookings(selectedBathhouse.id);
+                    toast.success("Данные обновлены автоматически", {
+                        duration: 2000,
+                        position: "top-right",
+                        style: {
+                            background: '#10B981',
+                            color: '#fff',
+                        },
+                    });
+                } catch (err) {
+                    toast.error("Ошибка автообновления", {
+                        duration: 3000,
+                        position: "top-right",
+                    });
+                }
+            }, 20000); // 20 seconds
+            setRefreshInterval(interval);
+
+            return () => {
+                clearInterval(interval);
+                setRefreshInterval(null);
+            };
+        } else {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+                setRefreshInterval(null);
+            }
+        }
+    }, [autoRefreshEnabled, selectedBathhouse]);
+
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+        };
+    }, [refreshInterval]);
 
 
     useEffect(() => {
@@ -531,9 +579,16 @@ export default function BookingList() {
             return null;
         }
 
+        // Handle 24/7 case
+        if (selectedBathhouse.is_24_hours) {
+            const topOffset = (currentHour * slotHeight) + (currentMinutes / 60) * slotHeight;
+            return topOffset;
+        }
+
+        // Regular working hours
         const startTime = dayjs(`2000-01-01 ${selectedBathhouse.start_of_work}`);
         const endTime = dayjs(`2000-01-01 ${selectedBathhouse.end_of_work}`);
-        const isOvernight = endTime.isBefore(startTime) || endTime.isSame(startTime);
+        const isOvernight = endTime.isBefore(startTime);
 
         let isWithinWorkingHours = false;
         let slotPosition = 0;
@@ -586,9 +641,17 @@ export default function BookingList() {
                             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Бронирования</h1>
                             <p className="text-gray-600 mt-1">Управление бронированиями саун и бань</p>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                            <span className="text-sm text-gray-600">Онлайн</span>
+                        <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                <span className="text-sm text-gray-600">Онлайн</span>
+                            </div>
+                            {autoRefreshEnabled && selectedBathhouse && (
+                                <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                                    <span className="text-sm text-blue-600 font-medium">Автообновление каждые 20с</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -684,6 +747,40 @@ export default function BookingList() {
                                 {/* Action Buttons */}
                                 <div className="flex flex-col sm:flex-row gap-2">
                                     <button
+                                        onClick={() => {
+                                            setAutoRefreshEnabled(!autoRefreshEnabled);
+                                            if (!autoRefreshEnabled) {
+                                                toast.success("Автообновление включено", {
+                                                    duration: 2000,
+                                                    position: "top-right",
+                                                });
+                                            } else {
+                                                toast.info("Автообновление отключено", {
+                                                    duration: 2000,
+                                                    position: "top-right",
+                                                });
+                                            }
+                                        }}
+                                        className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-colors font-medium text-sm ${autoRefreshEnabled
+                                                ? 'bg-red-600 text-white hover:bg-red-700'
+                                                : 'bg-gray-600 text-white hover:bg-gray-700'
+                                            }`}
+                                    >
+                                        {autoRefreshEnabled ? (
+                                            <>
+                                                <Pause className="w-4 h-4" />
+                                                <span className="hidden sm:inline">Остановить автообновление</span>
+                                                <span className="sm:hidden">Пауза</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Play className="w-4 h-4" />
+                                                <span className="hidden sm:inline">Включить автообновление</span>
+                                                <span className="sm:hidden">Авто</span>
+                                            </>
+                                        )}
+                                    </button>
+                                    <button
                                         onClick={openCreateBookingModal}
                                         className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                                         disabled={loading}
@@ -759,19 +856,26 @@ export default function BookingList() {
                                                                         const startHour = start.hour();
                                                                         const startMinutes = start.minute();
 
-                                                                        const bathhouseStart = dayjs(`2000-01-01 ${selectedBathhouse.start_of_work}`);
-                                                                        const bathhouseEnd = dayjs(`2000-01-01 ${selectedBathhouse.end_of_work}`);
-                                                                        const isOvernight = bathhouseEnd.isBefore(bathhouseStart) || bathhouseEnd.isSame(bathhouseStart);
-
                                                                         let slotPosition = 0;
-                                                                        if (isOvernight) {
-                                                                            if (startHour >= bathhouseStart.hour()) {
-                                                                                slotPosition = startHour - bathhouseStart.hour();
-                                                                            } else {
-                                                                                slotPosition = (24 - bathhouseStart.hour()) + startHour;
-                                                                            }
+
+                                                                        // Handle 24/7 case
+                                                                        if (selectedBathhouse.is_24_hours) {
+                                                                            slotPosition = startHour;
                                                                         } else {
-                                                                            slotPosition = startHour - bathhouseStart.hour();
+                                                                            // Regular working hours
+                                                                            const bathhouseStart = dayjs(`2000-01-01 ${selectedBathhouse.start_of_work}`);
+                                                                            const bathhouseEnd = dayjs(`2000-01-01 ${selectedBathhouse.end_of_work}`);
+                                                                            const isOvernight = bathhouseEnd.isBefore(bathhouseStart);
+
+                                                                            if (isOvernight) {
+                                                                                if (startHour >= bathhouseStart.hour()) {
+                                                                                    slotPosition = startHour - bathhouseStart.hour();
+                                                                                } else {
+                                                                                    slotPosition = (24 - bathhouseStart.hour()) + startHour;
+                                                                                }
+                                                                            } else {
+                                                                                slotPosition = startHour - bathhouseStart.hour();
+                                                                            }
                                                                         }
 
                                                                         const topOffset = (slotPosition * slotHeight) + (startMinutes / 60) * slotHeight;
