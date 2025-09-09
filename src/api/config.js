@@ -10,6 +10,8 @@ export const API_URLS = {
   rooms: `${API_BASE_URL}/users/rooms/`,
   bathhouseItems: `${API_BASE_URL}/users/bathhouse-items/`,
   menuCategories: `${API_BASE_URL}/users/menu-categories/`,
+  bonusSystemBalance: `${API_BASE_URL}/bookings/bonus/balance/`,
+  bonusSystemTransactions: `${API_BASE_URL}/bookings/bonus/transactions/`,
   // другие эндпоинты
 };
 

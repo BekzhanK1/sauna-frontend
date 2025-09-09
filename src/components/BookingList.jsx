@@ -36,6 +36,11 @@ export default function BookingList() {
     const [itemsTotalPrice, setItemsTotalPrice] = useState(0);
     const [estimatedPrice, setEstimatedPrice] = useState(0);
     const [createBookingLoading, setCreateBookingLoading] = useState(false);
+    // Payment modal state
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [paymentLoading, setPaymentLoading] = useState(false);
+    const [paymentBonusBalance, setPaymentBonusBalance] = useState(null);
+    const [paymentRedeemInput, setPaymentRedeemInput] = useState('0');
 
     const slotHeight = 48;
     const headerHeight = 48;
@@ -87,6 +92,75 @@ export default function BookingList() {
             toast.error("Не удалось загрузить бронирования");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const canCancelConfirmation = (booking) => {
+        if (!booking) return false;
+        const end = dayjs(booking.start_time).add(booking.hours, 'hour');
+        return dayjs().isBefore(end);
+    };
+
+    const openPaymentModal = async (booking) => {
+        if (!booking || !selectedBathhouse) return;
+        try {
+            setPaymentLoading(true);
+            setShowPaymentModal(true);
+            setPaymentRedeemInput('');
+            setPaymentBonusBalance(null);
+            const res = await api.get(API_URLS.bonusSystemBalance, {
+                params: {
+                    bathhouse_id: selectedBathhouse.id,
+                    phone: booking.phone,
+                }
+            });
+            const bal = Number(res?.data?.balance || 0);
+            setPaymentBonusBalance(bal);
+        } catch (err) {
+            console.error(err);
+            toast.error('Не удалось получить баланс бонусов');
+        } finally {
+            setPaymentLoading(false);
+        }
+    };
+
+    const parseAmount = (val) => {
+        if (val === null || val === undefined) return 0;
+        const normalized = String(val).replace(',', '.').trim();
+        const num = parseFloat(normalized);
+        return Number.isFinite(num) ? num : 0;
+    };
+
+    const handleAcceptPayment = async () => {
+        if (!selectedBooking || !selectedBathhouse) return;
+        try {
+            setPaymentLoading(true);
+            const finalPriceNum = Number(selectedBooking.final_price || 0);
+            const requested = parseAmount(paymentRedeemInput);
+            const redeem = Math.max(0, Math.min(requested, Number(paymentBonusBalance || 0), finalPriceNum));
+
+            const res = await api.post(`${API_URLS.bookings}${selectedBooking.id}/process-payment/`, {
+                amount: redeem,
+            }, {
+                params: {
+                    bathhouse_id: selectedBathhouse.id,
+                    phone: selectedBooking.phone,
+                }
+            });
+
+            if (res?.data?.is_paid) {
+                toast.success('Оплата принята');
+            } else {
+                toast.success('Платеж обработан');
+            }
+            setShowPaymentModal(false);
+            setSelectedBooking(null);
+            fetchBookings(selectedBathhouse.id);
+        } catch (err) {
+            console.error(err);
+            toast.error('Не удалось принять оплату');
+        } finally {
+            setPaymentLoading(false);
         }
     };
 
@@ -585,8 +659,8 @@ export default function BookingList() {
                                         <button
                                             onClick={() => setViewMode("timetable")}
                                             className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${viewMode === "timetable"
-                                                    ? "bg-white text-blue-600 shadow-sm"
-                                                    : "text-gray-600 hover:text-gray-900"
+                                                ? "bg-white text-blue-600 shadow-sm"
+                                                : "text-gray-600 hover:text-gray-900"
                                                 }`}
                                         >
                                             <Clock className="w-4 h-4" />
@@ -596,8 +670,8 @@ export default function BookingList() {
                                         <button
                                             onClick={() => setViewMode("table")}
                                             className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${viewMode === "table"
-                                                    ? "bg-white text-blue-600 shadow-sm"
-                                                    : "text-gray-600 hover:text-gray-900"
+                                                ? "bg-white text-blue-600 shadow-sm"
+                                                : "text-gray-600 hover:text-gray-900"
                                                 }`}
                                         >
                                             <Eye className="w-4 h-4" />
@@ -767,6 +841,7 @@ export default function BookingList() {
                                                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Время</th>
                                                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Часы</th>
                                                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Цена</th>
+                                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Оплата</th>
                                                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Статус</th>
                                                     </tr>
                                                 </thead>
@@ -796,6 +871,19 @@ export default function BookingList() {
                                                             </td>
                                                             <td className="px-4 py-3 text-sm font-medium text-gray-900">
                                                                 {parseInt(booking.final_price).toLocaleString('ru-RU')} ₸
+                                                            </td>
+                                                            <td className="px-4 py-3">
+                                                                {booking.is_paid ? (
+                                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                                        <div className="w-1.5 h-1.5 bg-green-400 rounded-full mr-1.5"></div>
+                                                                        Оплачено
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                                                        <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full mr-1.5"></div>
+                                                                        Не оплачено
+                                                                    </span>
+                                                                )}
                                                             </td>
                                                             <td className="px-4 py-3">
                                                                 {booking.confirmed ? (
@@ -930,8 +1018,8 @@ export default function BookingList() {
                                                         <div
                                                             key={room.id}
                                                             className={`p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 hover:shadow-md ${selectedRoom?.id === room.id
-                                                                    ? 'border-blue-500 bg-blue-50 shadow-md'
-                                                                    : 'border-gray-200 hover:border-gray-300 bg-white'
+                                                                ? 'border-blue-500 bg-blue-50 shadow-md'
+                                                                : 'border-gray-200 hover:border-gray-300 bg-white'
                                                                 }`}
                                                             onClick={() => handleRoomSelect(room)}
                                                         >
@@ -1157,17 +1245,31 @@ export default function BookingList() {
                                 <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto relative">
                                     {/* Modal Header */}
                                     <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-2xl">
-                                        <div className="flex items-center justify-between">
+                                        <div className="flex items-center justify-between gap-3">
                                             <div>
                                                 <h3 className="text-2xl font-bold text-gray-900">{selectedBooking.name}</h3>
                                                 <p className="text-gray-600 mt-1">{selectedBooking.phone}</p>
                                             </div>
-                                            <button
-                                                onClick={() => setSelectedBooking(null)}
-                                                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                                            >
-                                                <X className="w-6 h-6" />
-                                            </button>
+                                            <div className="flex items-center gap-2">
+                                                {selectedBooking?.is_paid === true ? (
+                                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                                                        Оплачено
+                                                    </span>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => openPaymentModal(selectedBooking)}
+                                                        className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+                                                    >
+                                                        Принять оплату
+                                                    </button>
+                                                )}
+                                                <button
+                                                    onClick={() => setSelectedBooking(null)}
+                                                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                                >
+                                                    <X className="w-6 h-6" />
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -1201,6 +1303,18 @@ export default function BookingList() {
                                                     <div className="flex justify-between items-center py-2 border-b border-gray-100">
                                                         <span className="text-gray-600 font-medium">Итого к оплате</span>
                                                         <span className="text-lg font-bold text-gray-900">{parseInt(selectedBooking.final_price).toLocaleString('ru-RU')} ₸</span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center py-2">
+                                                        <span className="text-gray-600 font-medium">Оплата</span>
+                                                        {selectedBooking?.is_paid ? (
+                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                                                                Оплачено
+                                                            </span>
+                                                        ) : (
+                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+                                                                Не оплачено
+                                                            </span>
+                                                        )}
                                                     </div>
                                                     <div className="flex justify-between items-center py-2">
                                                         <span className="text-gray-600 font-medium">Статус</span>
@@ -1239,8 +1353,8 @@ export default function BookingList() {
                                         </div>
 
                                         {/* Action Buttons */}
-                                        <div className="mt-8 pt-6 border-t border-gray-200">
-                                            {selectedBooking.confirmed ? (
+                                        <div className="mt-8 pt-6 border-t border-gray-200 space-y-3">
+                                            {selectedBooking.confirmed && canCancelConfirmation(selectedBooking) && (
                                                 <button
                                                     onClick={async () => {
                                                         try {
@@ -1257,7 +1371,9 @@ export default function BookingList() {
                                                 >
                                                     Отменить подтверждение
                                                 </button>
-                                            ) : (
+                                            )}
+
+                                            {!selectedBooking.confirmed && (
                                                 <button
                                                     onClick={async () => {
                                                         try {
@@ -1275,7 +1391,91 @@ export default function BookingList() {
                                                     Подтвердить бронирование
                                                 </button>
                                             )}
+
+                                            {!selectedBooking.is_paid && (
+                                                <button
+                                                    onClick={() => openPaymentModal(selectedBooking)}
+                                                    className="w-full px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+                                                >
+                                                    Принять оплату
+                                                </button>
+                                            )}
                                         </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Payment Modal */}
+                        {showPaymentModal && (
+                            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                                <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowPaymentModal(false)} />
+                                <div className="relative bg-white rounded-2xl w-full max-w-md shadow-2xl">
+                                    <div className="px-6 py-4 border-b border-gray-200 rounded-t-2xl flex items-center justify-between">
+                                        <h3 className="text-xl font-bold text-gray-900">Принять оплату</h3>
+                                        <button
+                                            onClick={() => setShowPaymentModal(false)}
+                                            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                        >
+                                            <X className="w-6 h-6" />
+                                        </button>
+                                    </div>
+                                    <div className="p-6 space-y-4">
+                                        <div className="text-sm text-gray-700">
+                                            <div className="flex justify-between py-2">
+                                                <span className="text-gray-600">Итого к оплате</span>
+                                                <span className="font-semibold">{parseInt(selectedBooking?.final_price || 0).toLocaleString('ru-RU')} ₸</span>
+                                            </div>
+                                            <div className="flex justify-between py-2">
+                                                <span className="text-gray-600">Бонусный баланс</span>
+                                                <span className="font-semibold">{Number(paymentBonusBalance || 0).toLocaleString('ru-RU')} ₸</span>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            {Number(paymentBonusBalance || 0) > 0 ? (
+                                                <>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">Списать бонусов (₸)</label>
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        step="1"
+                                                        value={paymentRedeemInput}
+                                                        onChange={(e) => setPaymentRedeemInput(e.target.value)}
+                                                        placeholder="Введите сумму бонусов"
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                    />
+                                                    <p className="mt-1 text-xs text-gray-500">Не больше доступного баланса и суммы к оплате.</p>
+                                                </>
+                                            ) : (
+                                                <div className="text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded-lg p-3">
+                                                    Бонусов пока нет для списания.
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {paymentLoading && (
+                                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-200 border-t-blue-600"></div>
+                                                Обработка...
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="px-6 py-4 border-t border-gray-200 flex gap-3">
+                                        <button
+                                            onClick={() => setShowPaymentModal(false)}
+                                            className="flex-1 py-2 px-4 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                                            disabled={paymentLoading}
+                                        >
+                                            Отмена
+                                        </button>
+                                        <button
+                                            onClick={handleAcceptPayment}
+                                            className="flex-1 py-2 px-4 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
+                                            disabled={paymentLoading}
+                                        >
+                                            Принять
+                                        </button>
                                     </div>
                                 </div>
                             </div>

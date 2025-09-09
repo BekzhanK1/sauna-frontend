@@ -42,6 +42,7 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
     const [countdown, setCountdown] = useState(null);
     const [countdownInterval, setCountdownInterval] = useState(null);
     const [query, setQuery] = useState("");
+    const [bonusBalance, setBonusBalance] = useState("0");
 
     const navigate = useNavigate();
 
@@ -205,6 +206,22 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
             toast.success("Бронирование создано без подтверждения SMS");
             setShowConfirmPhoneModal(false);
             resetSelections();
+
+            // Fetch bonus balance for the phone number after reset
+            try {
+                const bonusRes = await unauthenticatedApi.get(API_URLS.bonusSystemBalance, {
+                    params: {
+                        bathhouse_id: currentRoom.bathhouse,
+                        phone: phone.trim(),
+                    }
+                });
+                console.log("result: ", bonusRes);
+                setBonusBalance(bonusRes.data.balance);
+                console.log("Setting balance to: ", bonusRes.data.balance);
+            } catch (err) {
+                console.error('Failed to fetch bonus balance:', err);
+                setBonusBalance("0");
+            }
         } catch {
             toast.error("Не удалось создать бронирование");
         } finally {
@@ -291,6 +308,7 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
         setSmsCode("");
         setSelectedItems([]);
         setItemsTotalPrice(0);
+        setBonusBalance("0");
     };
 
     const getDays = () => {
@@ -945,6 +963,10 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                                         (confirmedBookingDetails.room_full_price || 0)
                                     )}₸
                                 </span>
+                            </div>
+                            <div className="flex justify-between text-sm mt-1">
+                                <span className="text-blue-600 font-bold">Бонусы на счету:</span>
+                                <span className="text-blue-600 font-bold">{bonusBalance}₸</span>
                             </div>
                             <div className="flex justify-between text-lg font-bold mt-2">
                                 <span>Итого:</span>
