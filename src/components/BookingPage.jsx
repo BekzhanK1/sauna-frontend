@@ -27,6 +27,7 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
     const [name, setName] = useState("");
     const [phone, setPhone] = useState("");
     const [selectedDay, setSelectedDay] = useState(0);
+    const [quickDuration, setQuickDuration] = useState(null);
 
     const [showConfirmPhoneModal, setShowConfirmPhoneModal] = useState(false);
     const [showSmsCodeModal, setShowSmsCodeModal] = useState(false);
@@ -118,6 +119,7 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
             setSelectedStartSlot(slot);
             setSelectedEndSlot(slot);
             setCurrentRoom(room);
+            setQuickDuration(null);
 
             const hours = 1;
             const price = hours * parseFloat(room.price_per_hour);
@@ -140,6 +142,7 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
 
             if (isValidRange) {
                 setSelectedEndSlot(slot);
+                setQuickDuration(null);
                 const hours = intermediateHours;
                 const price = hours * parseFloat(room.price_per_hour);
                 setEstimatedPrice(price);
@@ -147,6 +150,7 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                 setSelectedStartSlot(slot);
                 setSelectedEndSlot(slot);
                 setCurrentRoom(room);
+                setQuickDuration(null);
 
                 const hours = 1;
                 const price = hours * parseFloat(room.price_per_hour);
@@ -156,10 +160,40 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
             setSelectedStartSlot(slot);
             setSelectedEndSlot(slot);
             setCurrentRoom(room);
+            setQuickDuration(null);
 
             const hours = 1;
             const price = hours * parseFloat(room.price_per_hour);
             setEstimatedPrice(price);
+        }
+    };
+
+    const handleQuickDuration = (hours) => {
+        if (!selectedStartSlot || !currentRoom) return;
+
+        setQuickDuration(hours);
+        const endSlot = selectedStartSlot.add(hours - 1, "hour");
+
+        // Check if the range is valid
+        let isValidRange = true;
+        for (let i = 0; i < hours; i++) {
+            const blockStart = selectedStartSlot.add(i, "hour");
+            const blockEnd = blockStart.add(1, "hour");
+
+            const booked = isSlotBooked(currentRoomBookings, blockStart, blockEnd);
+
+            if (booked) {
+                isValidRange = false;
+                break;
+            }
+        }
+
+        if (isValidRange) {
+            setSelectedEndSlot(endSlot);
+            const price = hours * parseFloat(currentRoom.price_per_hour);
+            setEstimatedPrice(price);
+        } else {
+            toast.error("Выбранное время занято");
         }
     };
 
@@ -309,6 +343,7 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
         setSelectedItems([]);
         setItemsTotalPrice(0);
         setBonusBalance("0");
+        setQuickDuration(null);
     };
 
     const getDays = () => {
@@ -598,8 +633,73 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                                                                     </div>
                                                                 </div>
 
+                                                                {/* Time selection summary */}
+                                                                {selectedStartSlot && (
+                                                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                                                                        <div className="flex items-center justify-between">
+                                                                            <div>
+                                                                                <h4 className="font-semibold text-blue-900 mb-1">Выбранное время</h4>
+                                                                                <div className="text-sm text-blue-700">
+                                                                                    <div className="flex items-center gap-2">
+                                                                                        <Clock className="w-4 h-4" />
+                                                                                        <span>
+                                                                                            {selectedStartSlot.format("DD.MM.YYYY HH:mm")} - {selectedEndSlot.format("HH:mm")}
+                                                                                        </span>
+                                                                                    </div>
+                                                                                    <div className="mt-1">
+                                                                                        <span className="font-medium">
+                                                                                            {selectedEndSlot.diff(selectedStartSlot, "hour") + 1} ч.
+                                                                                        </span>
+                                                                                        <span className="text-blue-600 ml-2">
+                                                                                            {parseInt(room.price_per_hour).toLocaleString()} ₸/час
+                                                                                        </span>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                            <button
+                                                                                onClick={() => {
+                                                                                    setSelectedStartSlot(null);
+                                                                                    setSelectedEndSlot(null);
+                                                                                    setCurrentRoom(null);
+                                                                                    setQuickDuration(null);
+                                                                                    setEstimatedPrice(0);
+                                                                                }}
+                                                                                className="text-blue-600 hover:text-blue-800 transition-colors"
+                                                                            >
+                                                                                <X className="w-5 h-5" />
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+
+                                                                {/* Quick duration buttons */}
+                                                                {selectedStartSlot && !selectedEndSlot && (
+                                                                    <div className="mb-4">
+                                                                        <h4 className="text-sm font-medium text-gray-700 mb-2">Быстрый выбор продолжительности:</h4>
+                                                                        <div className="flex flex-wrap gap-2">
+                                                                            {[1, 2, 3, 4, 6, 8].map((hours) => (
+                                                                                <button
+                                                                                    key={hours}
+                                                                                    onClick={() => handleQuickDuration(hours)}
+                                                                                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${quickDuration === hours
+                                                                                            ? 'bg-blue-600 text-white'
+                                                                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                                                        }`}
+                                                                                >
+                                                                                    {hours} ч.
+                                                                                </button>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+
                                                                 {/* Time slots */}
-                                                                <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2">
+                                                                <div className="mb-2">
+                                                                    <h4 className="text-sm font-medium text-gray-700 mb-2">
+                                                                        {selectedStartSlot ? "Выберите время окончания:" : "Выберите время начала:"}
+                                                                    </h4>
+                                                                </div>
+                                                                <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2">
                                                                     {generateHourBlocks(bathhouse, days[selectedDay].date).map((hour) => {
                                                                         const slotStart = days[selectedDay].date.hour(hour).minute(0).second(0);
                                                                         const slotEnd = slotStart.add(1, "hour");
@@ -609,18 +709,18 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                                                                         const isSelectedEnd = selectedEndSlot && slotStart.isSame(selectedEndSlot);
                                                                         const inRange = isInRange(slotStart);
 
-                                                                        let buttonClass = "w-full text-xs py-2 rounded font-medium transition ";
+                                                                        let buttonClass = "w-full text-xs py-3 px-2 rounded-lg font-medium transition-all duration-200 border-2 ";
 
                                                                         if (booked) {
-                                                                            buttonClass += "bg-red-100 text-red-800 cursor-not-allowed";
+                                                                            buttonClass += "bg-red-50 text-red-600 border-red-200 cursor-not-allowed opacity-60";
                                                                         } else if (isSelectedStart) {
-                                                                            buttonClass += "bg-green-500 text-white";
+                                                                            buttonClass += "bg-green-500 text-white border-green-500 shadow-lg transform scale-105";
                                                                         } else if (isSelectedEnd) {
-                                                                            buttonClass += "bg-blue-500 text-white";
+                                                                            buttonClass += "bg-blue-500 text-white border-blue-500 shadow-lg transform scale-105";
                                                                         } else if (inRange) {
-                                                                            buttonClass += "bg-yellow-200 text-yellow-800";
+                                                                            buttonClass += "bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-200";
                                                                         } else {
-                                                                            buttonClass += "bg-green-100 text-green-800 hover:bg-green-200";
+                                                                            buttonClass += "bg-white text-gray-700 border-gray-200 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700";
                                                                         }
 
                                                                         return (
@@ -629,8 +729,14 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                                                                                 disabled={booked || bookingLoading}
                                                                                 onClick={() => handleSlotClick(slotStart, room)}
                                                                                 className={buttonClass}
+                                                                                title={booked ? "Время занято" : `Выбрать ${slotStart.format("HH:mm")}`}
                                                                             >
-                                                                                {slotStart.format("HH:mm")}
+                                                                                <div className="text-center">
+                                                                                    <div className="font-semibold">{slotStart.format("HH:mm")}</div>
+                                                                                    {booked && (
+                                                                                        <div className="text-xs opacity-75 mt-1">Занято</div>
+                                                                                    )}
+                                                                                </div>
                                                                             </button>
                                                                         );
                                                                     })}
