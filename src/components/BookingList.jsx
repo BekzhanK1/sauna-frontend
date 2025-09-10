@@ -41,6 +41,10 @@ export default function BookingList() {
     const [paymentLoading, setPaymentLoading] = useState(false);
     const [paymentBonusBalance, setPaymentBonusBalance] = useState(null);
     const [paymentRedeemInput, setPaymentRedeemInput] = useState('0');
+    // Cancel confirmation modal state
+    const [showCancelConfirmModal, setShowCancelConfirmModal] = useState(false);
+    const [cancelVerifyInput, setCancelVerifyInput] = useState('');
+    const [cancelLoading, setCancelLoading] = useState(false);
 
     // Auto-refresh states
     const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(false);
@@ -397,7 +401,6 @@ export default function BookingList() {
                     updated = prev.map((it) => it.item === itemId ? { ...it, quantity } : it);
                 } else {
                     updated = [...prev, { item: itemId, quantity }];
-                    ё
                 }
             }
 
@@ -1461,16 +1464,9 @@ export default function BookingList() {
                                         <div className="mt-8 pt-6 border-t border-gray-200 space-y-3">
                                             {selectedBooking.confirmed && canCancelConfirmation(selectedBooking) && (
                                                 <button
-                                                    onClick={async () => {
-                                                        try {
-                                                            await api.delete(`${API_URLS.bookings}${selectedBooking.id}/`);
-                                                            toast.success("Бронирование отменено");
-                                                            setSelectedBooking(null);
-                                                            fetchBookings(selectedBathhouse.id);
-                                                        } catch (err) {
-                                                            console.error(err);
-                                                            toast.error("Не удалось отменить бронирование");
-                                                        }
+                                                    onClick={() => {
+                                                        setCancelVerifyInput('');
+                                                        setShowCancelConfirmModal(true);
                                                     }}
                                                     className="w-full px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
                                                 >
@@ -1580,6 +1576,89 @@ export default function BookingList() {
                                             disabled={paymentLoading}
                                         >
                                             Принять
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        {/* Cancel Confirmation Modal */}
+                        {showCancelConfirmModal && selectedBooking && (
+                            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                                <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowCancelConfirmModal(false)} />
+                                <div className="relative bg-white rounded-2xl w-full max-w-md shadow-2xl">
+                                    <div className="px-6 py-4 border-b border-gray-200 rounded-t-2xl flex items-center justify-between">
+                                        <h3 className="text-xl font-bold text-gray-900">Подтвердите действие</h3>
+                                        <button
+                                            onClick={() => setShowCancelConfirmModal(false)}
+                                            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                        >
+                                            <X className="w-6 h-6" />
+                                        </button>
+                                    </div>
+                                    <div className="p-6 space-y-4">
+                                        <p className="text-sm text-gray-700">
+                                            Вы действительно хотите отменить подтверждение бронирования для <span className="font-semibold">{selectedBooking.name}</span>?
+                                        </p>
+                                        <p className="text-sm text-gray-700">
+                                            <span className="font-semibold">Номер телефона:</span> {selectedBooking.phone}
+                                        </p>
+                                        <p className="text-sm text-gray-700">
+                                            Введите последние 4 цифры номера телефона клиента, чтобы подтвердить:
+                                        </p>
+                                        <input
+                                            type="text"
+                                            inputMode="numeric"
+                                            maxLength={4}
+                                            value={cancelVerifyInput}
+                                            onChange={(e) => setCancelVerifyInput(e.target.value.replace(/\D/g, ''))}
+                                            placeholder="____"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent tracking-widest text-center"
+                                        />
+                                        <div className="text-xs text-gray-500">
+                                            Это действие нельзя отменить. Клиент получит уведомление, если предусмотрено.
+                                        </div>
+                                        {cancelLoading && (
+                                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-red-200 border-t-red-600"></div>
+                                                Обработка...
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="px-6 py-4 border-t border-gray-200 flex gap-3">
+                                        <button
+                                            onClick={() => setShowCancelConfirmModal(false)}
+                                            className="flex-1 py-2 px-4 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                                            disabled={cancelLoading}
+                                        >
+                                            Отмена
+                                        </button>
+                                        <button
+                                            onClick={async () => {
+                                                if (!selectedBooking) return;
+                                                const digits = String(selectedBooking.phone || '').replace(/\D/g, '');
+                                                const last4 = digits.slice(-4);
+                                                if (cancelVerifyInput !== last4) {
+                                                    toast.error('Неверные цифры телефона');
+                                                    return;
+                                                }
+                                                try {
+                                                    setCancelLoading(true);
+                                                    await api.delete(`${API_URLS.bookings}${selectedBooking.id}/`);
+                                                    toast.success('Бронирование отменено');
+                                                    setShowCancelConfirmModal(false);
+                                                    setSelectedBooking(null);
+                                                    fetchBookings(selectedBathhouse.id);
+                                                } catch (err) {
+                                                    console.error(err);
+                                                    toast.error('Не удалось отменить бронирование');
+                                                } finally {
+                                                    setCancelLoading(false);
+                                                }
+                                            }}
+                                            className="flex-1 py-2 px-4 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
+                                            disabled={cancelLoading || cancelVerifyInput.length !== 4}
+                                        >
+                                            Подтвердить
                                         </button>
                                     </div>
                                 </div>
