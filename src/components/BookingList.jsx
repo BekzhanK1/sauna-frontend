@@ -200,10 +200,19 @@ export default function BookingList() {
                 }
             });
 
+            const earned = Number(res?.data?.earned_bonus || 0);
             if (res?.data?.is_paid) {
-                toast.success('Оплата принята');
+                if (earned > 0) {
+                    toast.success(`Оплата принята. Начислено бонусов: ${earned.toFixed(2)}₸`);
+                } else {
+                    toast.success('Оплата принята');
+                }
             } else {
-                toast.success('Платеж обработан');
+                if (earned > 0) {
+                    toast.success(`Платеж обработан. Начислено бонусов: ${earned.toFixed(2)}₸`);
+                } else {
+                    toast.success('Платеж обработан');
+                }
             }
             setShowPaymentModal(false);
             setSelectedBooking(null);

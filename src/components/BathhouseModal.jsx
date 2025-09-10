@@ -25,7 +25,21 @@ export default function BathhouseModal({
             description: "",
             phone: "",
             is_24_hours: false,
-            bonus_percentage: null,
+            bonus_threshold_amount: null,
+            lower_bonus_percentage: null,
+            higher_bonus_percentage: null,
+            bonus_accrual_enabled: true,
+            happy_hours_enabled: false,
+            birthday_discount_enabled: false,
+            bonus_hour_enabled: false,
+            happy_hours_start_time: "",
+            happy_hours_end_time: "",
+            happy_hours_discount_percentage: null,
+            happy_hours_days: [],
+            birthday_discount_percentage: null,
+            min_hours_for_bonus: null,
+            bonus_hour_days: [],
+            bonus_hours_awarded: null,
             start_of_work: "",
             end_of_work: "",
         });
@@ -180,21 +194,214 @@ export default function BathhouseModal({
                         <div className="space-y-4">
                             <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">Бизнес информация</h3>
 
-                            {/* Bonus System percentage */}
+                            {/* Enable/Disable Toggles */}
+                            <div className="space-y-3">
+                                <h4 className="text-md font-medium text-gray-800">Включить функции</h4>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl">
+                                        <input
+                                            type="checkbox"
+                                            id="bonus_accrual_enabled"
+                                            checked={bathhouseDetails.bonus_accrual_enabled}
+                                            onChange={(e) => setBathhouseDetails({ ...bathhouseDetails, bonus_accrual_enabled: e.target.checked })}
+                                            className="h-5 w-5 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                                        />
+                                        <label htmlFor="bonus_accrual_enabled" className="text-sm font-medium text-gray-700">
+                                            Начисление бонусов
+                                        </label>
+                                    </div>
+                                    <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl">
+                                        <input
+                                            type="checkbox"
+                                            id="happy_hours_enabled"
+                                            checked={bathhouseDetails.happy_hours_enabled}
+                                            onChange={(e) => setBathhouseDetails({ ...bathhouseDetails, happy_hours_enabled: e.target.checked })}
+                                            className="h-5 w-5 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                                        />
+                                        <label htmlFor="happy_hours_enabled" className="text-sm font-medium text-gray-700">
+                                            Happy Hours
+                                        </label>
+                                    </div>
+                                    <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl">
+                                        <input
+                                            type="checkbox"
+                                            id="birthday_discount_enabled"
+                                            checked={bathhouseDetails.birthday_discount_enabled}
+                                            onChange={(e) => setBathhouseDetails({ ...bathhouseDetails, birthday_discount_enabled: e.target.checked })}
+                                            className="h-5 w-5 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                                        />
+                                        <label htmlFor="birthday_discount_enabled" className="text-sm font-medium text-gray-700">
+                                            Скидка на день рождения
+                                        </label>
+                                    </div>
+                                    <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl">
+                                        <input
+                                            type="checkbox"
+                                            id="bonus_hour_enabled"
+                                            checked={bathhouseDetails.bonus_hour_enabled}
+                                            onChange={(e) => setBathhouseDetails({ ...bathhouseDetails, bonus_hour_enabled: e.target.checked })}
+                                            className="h-5 w-5 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                                        />
+                                        <label htmlFor="bonus_hour_enabled" className="text-sm font-medium text-gray-700">
+                                            Бонусный час
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+
+                            {/* Loyalty Tier Settings */}
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div className="space-y-2">
+                                    <label className="block text-sm font-medium text-gray-700">Порог суммы (₸)</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        value={bathhouseDetails.bonus_threshold_amount || ""}
+                                        onChange={(e) => setBathhouseDetails({ ...bathhouseDetails, bonus_threshold_amount: e.target.value })}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                                        placeholder="Напр., 100000"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="block text-sm font-medium text-gray-700">%</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        max="100"
+                                        value={bathhouseDetails.lower_bonus_percentage || ""}
+                                        onChange={(e) => setBathhouseDetails({ ...bathhouseDetails, lower_bonus_percentage: e.target.value })}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                                        placeholder="Ниже порога, %"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="block text-sm font-medium text-gray-700">%</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        max="100"
+                                        value={bathhouseDetails.higher_bonus_percentage || ""}
+                                        onChange={(e) => setBathhouseDetails({ ...bathhouseDetails, higher_bonus_percentage: e.target.value })}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                                        placeholder="От порога и выше, %"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Happy Hours Days selector */}
                             <div className="space-y-2">
-                                <label className="block text-sm font-medium text-gray-700 flex items-center space-x-2">
-                                    <DollarSign className="h-4 w-4" />
-                                    <span>Процент бонусной системы</span>
-                                </label>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    max="100"
-                                    value={bathhouseDetails.bonus_percentage || ""}
-                                    onChange={(e) => setBathhouseDetails({ ...bathhouseDetails, bonus_percentage: e.target.value })}
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                                    placeholder="0-100%"
-                                />
+                                <label className="block text-sm font-medium text-gray-700">Дни недели для «Happy Hours»</label>
+                                <div className="flex flex-wrap gap-2">
+                                    {['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'].map((d) => {
+                                        const active = Array.isArray(bathhouseDetails.happy_hours_days) && bathhouseDetails.happy_hours_days.includes(d);
+                                        return (
+                                            <button
+                                                key={d}
+                                                type="button"
+                                                onClick={() => {
+                                                    const days = new Set(bathhouseDetails.happy_hours_days || []);
+                                                    if (days.has(d)) days.delete(d); else days.add(d);
+                                                    setBathhouseDetails({ ...bathhouseDetails, happy_hours_days: Array.from(days) })
+                                                }}
+                                                className={`px-3 py-1 rounded-lg border ${active ? 'bg-green-100 border-green-300 text-green-800' : 'bg-white border-gray-300 text-gray-700'}`}
+                                            >
+                                                {d}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Promotions Settings */}
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div className="space-y-2">
+                                    <label className="block text-sm font-medium text-gray-700">Happy Hours начало</label>
+                                    <input
+                                        type="time"
+                                        value={bathhouseDetails.happy_hours_start_time || ""}
+                                        onChange={(e) => setBathhouseDetails({ ...bathhouseDetails, happy_hours_start_time: e.target.value })}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="block text-sm font-medium text-gray-700">Happy Hours конец</label>
+                                    <input
+                                        type="time"
+                                        value={bathhouseDetails.happy_hours_end_time || ""}
+                                        onChange={(e) => setBathhouseDetails({ ...bathhouseDetails, happy_hours_end_time: e.target.value })}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="block text-sm font-medium text-gray-700">Скидка Happy Hours, %</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        max="100"
+                                        value={bathhouseDetails.happy_hours_discount_percentage || ""}
+                                        onChange={(e) => setBathhouseDetails({ ...bathhouseDetails, happy_hours_discount_percentage: e.target.value })}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div className="space-y-2">
+                                    <label className="block text-sm font-medium text-gray-700">Скидка «День рождения», %</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        max="100"
+                                        value={bathhouseDetails.birthday_discount_percentage || ""}
+                                        onChange={(e) => setBathhouseDetails({ ...bathhouseDetails, birthday_discount_percentage: e.target.value })}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="block text-sm font-medium text-gray-700">Бонусный час: мин. часы</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        value={bathhouseDetails.min_hours_for_bonus || ""}
+                                        onChange={(e) => setBathhouseDetails({ ...bathhouseDetails, min_hours_for_bonus: e.target.value })}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="block text-sm font-medium text-gray-700">Бонусный час: +часы</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        value={bathhouseDetails.bonus_hours_awarded || ""}
+                                        onChange={(e) => setBathhouseDetails({ ...bathhouseDetails, bonus_hours_awarded: e.target.value })}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Weekday selector for Bonus Hour */}
+                            <div className="space-y-2">
+                                <label className="block text-sm font-medium text-gray-700">Дни недели для «Бонусного часа»</label>
+                                <div className="flex flex-wrap gap-2">
+                                    {['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'].map((d) => {
+                                        const active = Array.isArray(bathhouseDetails.bonus_hour_days) && bathhouseDetails.bonus_hour_days.includes(d);
+                                        return (
+                                            <button
+                                                key={d}
+                                                type="button"
+                                                onClick={() => {
+                                                    const days = new Set(bathhouseDetails.bonus_hour_days || []);
+                                                    if (days.has(d)) days.delete(d); else days.add(d);
+                                                    setBathhouseDetails({ ...bathhouseDetails, bonus_hour_days: Array.from(days) })
+                                                }}
+                                                className={`px-3 py-1 rounded-lg border ${active ? 'bg-green-100 border-green-300 text-green-800' : 'bg-white border-gray-300 text-gray-700'}`}
+                                            >
+                                                {d}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
                             </div>
 
                             {/* 24/7 Checkbox */}

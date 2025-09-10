@@ -26,6 +26,7 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
     const [estimatedPrice, setEstimatedPrice] = useState(0);
     const [name, setName] = useState("");
     const [phone, setPhone] = useState("");
+    const [isBirthday, setIsBirthday] = useState(false);
     const [selectedDay, setSelectedDay] = useState(0);
     const [quickDuration, setQuickDuration] = useState(null);
 
@@ -114,6 +115,11 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
         });
     };
 
+    const checkAndShowPromotions = (startSlot, endSlot, room) => {
+        // This function is now simplified - promotions are shown in the preview panel
+        // No need for toast notifications or complex logic here
+    };
+
     const handleSlotClick = (slot, room) => {
         if (!selectedStartSlot) {
             setSelectedStartSlot(slot);
@@ -124,6 +130,9 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
             const hours = 1;
             const price = hours * parseFloat(room.price_per_hour);
             setEstimatedPrice(price);
+
+            // Check for promotions
+            checkAndShowPromotions(slot, slot, room);
         } else if (slot.isAfter(selectedStartSlot)) {
             const intermediateHours = slot.diff(selectedStartSlot, "hour") + 1;
 
@@ -146,6 +155,9 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                 const hours = intermediateHours;
                 const price = hours * parseFloat(room.price_per_hour);
                 setEstimatedPrice(price);
+
+                // Check for promotions
+                checkAndShowPromotions(selectedStartSlot, slot, room);
             } else {
                 setSelectedStartSlot(slot);
                 setSelectedEndSlot(slot);
@@ -155,6 +167,9 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                 const hours = 1;
                 const price = hours * parseFloat(room.price_per_hour);
                 setEstimatedPrice(price);
+
+                // Check for promotions
+                checkAndShowPromotions(slot, slot, room);
             }
         } else {
             setSelectedStartSlot(slot);
@@ -165,6 +180,9 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
             const hours = 1;
             const price = hours * parseFloat(room.price_per_hour);
             setEstimatedPrice(price);
+
+            // Check for promotions
+            checkAndShowPromotions(slot, slot, room);
         }
     };
 
@@ -232,6 +250,7 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                 hours,
                 extra_items_data: selectedItems,
                 skip_sms: true,
+                is_birthday: isBirthday,
             });
 
             setConfirmedBookingDetails(res.data);
@@ -293,6 +312,7 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                 start_time: startUTC,
                 hours,
                 extra_items_data: selectedItems,
+                is_birthday: isBirthday,
             });
 
             setBookingId(res.data.id);
@@ -555,6 +575,54 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                                                     `${dayjs(`1970-01-01T${bathhouse.start_of_work}`).format("HH:mm")} - ${dayjs(`1970-01-01T${bathhouse.end_of_work}`).format("HH:mm")}`}
                                             </span>
                                         </div>
+
+                                        {/* Promotion banners */}
+                                        <div className="flex flex-wrap gap-2 mt-3">
+                                            {bathhouse.happy_hours_enabled && (
+                                                <div className="bg-orange-100 text-orange-800 px-3 py-2 rounded-lg text-xs font-medium border border-orange-200">
+                                                    <div className="flex items-center gap-1">
+                                                        <span>🎉</span>
+                                                        <span className="font-bold">Счастливые часы</span>
+                                                    </div>
+                                                    <div className="text-xs mt-1">
+                                                        {bathhouse.happy_hours_discount_percentage}% скидка с {bathhouse.happy_hours_start_time} до {bathhouse.happy_hours_end_time}
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {bathhouse.birthday_discount_enabled && (
+                                                <div className="bg-pink-100 text-pink-800 px-3 py-2 rounded-lg text-xs font-medium border border-pink-200">
+                                                    <div className="flex items-center gap-1">
+                                                        <span>🎂</span>
+                                                        <span className="font-bold">День рождения</span>
+                                                    </div>
+                                                    <div className="text-xs mt-1">
+                                                        {bathhouse.birthday_discount_percentage}% скидка в день рождения
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {bathhouse.bonus_hour_enabled && (
+                                                <div className="bg-green-100 text-green-800 px-3 py-2 rounded-lg text-xs font-medium border border-green-200">
+                                                    <div className="flex items-center gap-1">
+                                                        <span>⏰</span>
+                                                        <span className="font-bold">Час в подарок</span>
+                                                    </div>
+                                                    <div className="text-xs mt-1">
+                                                        +{bathhouse.bonus_hours_awarded}ч бесплатно при бронировании от {bathhouse.min_hours_for_bonus}ч
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {bathhouse.bonus_accrual_enabled && (
+                                                <div className="bg-blue-100 text-blue-800 px-3 py-2 rounded-lg text-xs font-medium border border-blue-200">
+                                                    <div className="flex items-center gap-1">
+                                                        <span>💰</span>
+                                                        <span className="font-bold">Бонусная программа</span>
+                                                    </div>
+                                                    <div className="text-xs mt-1">
+                                                        {bathhouse.lower_bonus_percentage}% до {bathhouse.bonus_threshold_amount}₸, {bathhouse.higher_bonus_percentage}% свыше
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                     <div className="text-indigo-600 font-medium text-sm sm:text-base ml-4">
                                         {singleBathhouse ?
@@ -643,7 +711,7 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                                                                                     <div className="flex items-center gap-2">
                                                                                         <Clock className="w-4 h-4" />
                                                                                         <span>
-                                                                                            {selectedStartSlot.format("DD.MM.YYYY HH:mm")} - {selectedEndSlot.format("HH:mm")}
+                                                                                            {selectedStartSlot.format("DD.MM.YYYY HH:mm")} - {selectedEndSlot.add(1, 'hour').format("HH:mm")}
                                                                                         </span>
                                                                                     </div>
                                                                                     <div className="mt-1">
@@ -654,6 +722,47 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                                                                                             {parseInt(room.price_per_hour).toLocaleString()} ₸/час
                                                                                         </span>
                                                                                     </div>
+                                                                                    {/* Promo messages */}
+                                                                                    {(() => {
+                                                                                        const bath = bathhouse;
+                                                                                        const pct = Number(bath?.happy_hours_discount_percentage || 0);
+                                                                                        const startStr = bath?.happy_hours_start_time;
+                                                                                        const endStr = bath?.happy_hours_end_time;
+                                                                                        const hhDays = Array.isArray(bath?.happy_hours_days) ? bath.happy_hours_days : [];
+                                                                                        const hhEnabled = bath?.happy_hours_enabled;
+                                                                                        let happy = false;
+                                                                                        if (hhEnabled && pct && startStr && endStr && selectedStartSlot.isSame(selectedEndSlot, 'day')) {
+                                                                                            const startWin = dayjs(`1970-01-01T${startStr}`);
+                                                                                            const endWin = dayjs(`1970-01-01T${endStr}`);
+                                                                                            const inStart = selectedStartSlot.hour() >= startWin.hour();
+                                                                                            const inEnd = selectedEndSlot.add(1, 'hour').hour() <= endWin.hour();
+                                                                                            const weekdayStr = selectedStartSlot.format('dddd').toUpperCase();
+                                                                                            const dayOk = hhDays.length === 0 || hhDays.includes(weekdayStr);
+                                                                                            happy = inStart && inEnd && dayOk;
+                                                                                        }
+                                                                                        if (happy) {
+                                                                                            return (
+                                                                                                <div className="mt-2 text-green-700">
+                                                                                                    Вы получили скидку Happy Hours — {pct}%!
+                                                                                                </div>
+                                                                                            );
+                                                                                        }
+                                                                                        const bonusEnabled = bath?.bonus_hour_enabled;
+                                                                                        const minHours = Number(bath?.min_hours_for_bonus || 0);
+                                                                                        const days = Array.isArray(bath?.bonus_hour_days) ? bath.bonus_hour_days : [];
+                                                                                        const award = Number(bath?.bonus_hours_awarded || 0);
+                                                                                        const hours = selectedEndSlot.diff(selectedStartSlot, 'hour') + 1;
+                                                                                        const weekdayStr2 = selectedStartSlot.format('dddd').toUpperCase();
+                                                                                        const bonus = bonusEnabled && award > 0 && hours >= minHours && days.includes(weekdayStr2);
+                                                                                        if (bonus) {
+                                                                                            return (
+                                                                                                <div className="mt-2 text-green-700">
+                                                                                                    Вы получили +1 час по акции «Бонусный час»!
+                                                                                                </div>
+                                                                                            );
+                                                                                        }
+                                                                                        return null;
+                                                                                    })()}
                                                                                 </div>
                                                                             </div>
                                                                             <button
@@ -698,6 +807,29 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                                                                     <h4 className="text-sm font-medium text-gray-700 mb-2">
                                                                         {selectedStartSlot ? "Выберите время окончания:" : "Выберите время начала:"}
                                                                     </h4>
+                                                                    {/* Time slot legend */}
+                                                                    <div className="flex flex-wrap gap-3 text-xs text-gray-600 mb-3">
+                                                                        {/* <div className="flex items-center gap-1">
+                                                                            <div className="w-3 h-3 bg-orange-100 border border-orange-300 rounded"></div>
+                                                                            <span>Happy Hours</span>
+                                                                        </div> */}
+                                                                        <div className="flex items-center gap-1">
+                                                                            <div className="w-3 h-3 bg-green-500 rounded"></div>
+                                                                            <span>Начало</span>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-1">
+                                                                            <div className="w-3 h-3 bg-blue-500 rounded"></div>
+                                                                            <span>Конец</span>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-1">
+                                                                            <div className="w-3 h-3 bg-yellow-100 border border-yellow-300 rounded"></div>
+                                                                            <span>Диапазон</span>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-1">
+                                                                            <div className="w-3 h-3 bg-red-50 border border-red-200 rounded"></div>
+                                                                            <span>Занято</span>
+                                                                        </div>
+                                                                    </div>
                                                                 </div>
                                                                 <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2">
                                                                     {generateHourBlocks(bathhouse, days[selectedDay].date).map((hour) => {
@@ -709,6 +841,53 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                                                                         const isSelectedEnd = selectedEndSlot && slotStart.isSame(selectedEndSlot);
                                                                         const inRange = isInRange(slotStart);
 
+                                                                        // Check if this slot is in Happy Hours
+                                                                        const isHappyHours = (() => {
+                                                                            if (!bathhouse.happy_hours_enabled || !bathhouse.happy_hours_start_time || !bathhouse.happy_hours_end_time) {
+                                                                                return false;
+                                                                            }
+
+                                                                            const hhStart = dayjs(`1970-01-01T${bathhouse.happy_hours_start_time}`);
+                                                                            const hhEnd = dayjs(`1970-01-01T${bathhouse.happy_hours_end_time}`);
+                                                                            const hhDays = Array.isArray(bathhouse.happy_hours_days) ? bathhouse.happy_hours_days : [];
+                                                                            const weekdayStr = slotStart.format('dddd').toUpperCase();
+                                                                            const dayOk = hhDays.length === 0 || hhDays.includes(weekdayStr);
+
+                                                                            // Simple time comparison - check if slot hour is within range
+                                                                            const slotHour = slotStart.hour();
+                                                                            const startHour = hhStart.hour();
+                                                                            const endHour = hhEnd.hour();
+
+                                                                            let timeInRange = false;
+                                                                            if (endHour > startHour) {
+                                                                                // Normal case: same day (e.g., 12:00 to 18:00)
+                                                                                timeInRange = slotHour >= startHour && slotHour < endHour;
+                                                                            } else {
+                                                                                // Cross-midnight case: (e.g., 22:00 to 02:00)
+                                                                                timeInRange = slotHour >= startHour || slotHour < endHour;
+                                                                            }
+
+                                                                            // Debug logging
+                                                                            if (slotHour >= 12 && slotHour <= 18) {
+                                                                                console.log('Happy Hours Debug:', {
+                                                                                    enabled: bathhouse.happy_hours_enabled,
+                                                                                    startTime: bathhouse.happy_hours_start_time,
+                                                                                    endTime: bathhouse.happy_hours_end_time,
+                                                                                    startHour,
+                                                                                    endHour,
+                                                                                    slotHour,
+                                                                                    slotTime: slotStart.format('HH:mm'),
+                                                                                    weekdayStr,
+                                                                                    hhDays,
+                                                                                    dayOk,
+                                                                                    timeInRange,
+                                                                                    isHappyHours: dayOk && timeInRange
+                                                                                });
+                                                                            }
+
+                                                                            return dayOk && timeInRange;
+                                                                        })();
+
                                                                         let buttonClass = "w-full text-xs py-3 px-2 rounded-lg font-medium transition-all duration-200 border-2 ";
 
                                                                         if (booked) {
@@ -719,6 +898,8 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                                                                             buttonClass += "bg-blue-500 text-white border-blue-500 shadow-lg transform scale-105";
                                                                         } else if (inRange) {
                                                                             buttonClass += "bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-200";
+                                                                        } else if (isHappyHours) {
+                                                                            buttonClass += "bg-gradient-to-br from-orange-200 to-orange-300 text-orange-900 border-orange-400 hover:from-orange-300 hover:to-orange-400 font-bold shadow-lg animate-pulse";
                                                                         } else {
                                                                             buttonClass += "bg-white text-gray-700 border-gray-200 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700";
                                                                         }
@@ -729,13 +910,17 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                                                                                 disabled={booked || bookingLoading}
                                                                                 onClick={() => handleSlotClick(slotStart, room)}
                                                                                 className={buttonClass}
-                                                                                title={booked ? "Время занято" : `Выбрать ${slotStart.format("HH:mm")}`}
+                                                                                title={booked ? "Время занято" : `Выбрать ${slotStart.format("HH:mm")}${isHappyHours ? " (Happy Hours)" : ""}`}
                                                                             >
                                                                                 <div className="text-center">
                                                                                     <div className="font-semibold">{slotStart.format("HH:mm")}</div>
+                                                                                    {isHappyHours && !booked && (
+                                                                                        <div className="text-xs opacity-75 mt-1">🎉 HH</div>
+                                                                                    )}
                                                                                     {booked && (
                                                                                         <div className="text-xs opacity-75 mt-1">Занято</div>
                                                                                     )}
+
                                                                                 </div>
                                                                             </button>
                                                                         );
@@ -865,10 +1050,277 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                                     {selectedEndSlot.diff(selectedStartSlot, "hour") + 1} ч.
                                 </p>
                             )}
-                            <p>
-                                <strong>Стоимость:</strong> {fmt(totalPrice)}₸
-                            </p>
+
+                            {/* Applied promotions preview with animations */}
+                            {(() => {
+                                const bath = bathhouses.find(b => b.id === currentRoom?.bathhouse);
+                                if (!bath || !selectedStartSlot || !selectedEndSlot) return null;
+
+                                const hours = selectedEndSlot.diff(selectedStartSlot, 'hour') + 1;
+                                // Convert day to English format to match backend data
+                                const dayMap = {
+                                    'ПОНЕДЕЛЬНИК': 'MONDAY',
+                                    'ВТОРНИК': 'TUESDAY',
+                                    'СРЕДА': 'WEDNESDAY',
+                                    'ЧЕТВЕРГ': 'THURSDAY',
+                                    'ПЯТНИЦА': 'FRIDAY',
+                                    'СУББОТА': 'SATURDAY',
+                                    'ВОСКРЕСЕНЬЕ': 'SUNDAY'
+                                };
+                                const weekdayStr = dayMap[selectedStartSlot.format('dddd').toUpperCase()] || selectedStartSlot.format('dddd').toUpperCase();
+
+                                const promotions = [];
+
+                                // Check if Happy Hours applies first
+                                let happyHoursApplies = false;
+                                if (bath.happy_hours_enabled && bath.happy_hours_discount_percentage > 0) {
+                                    const hhStart = dayjs(`1970-01-01T${bath.happy_hours_start_time}`);
+                                    const hhEnd = dayjs(`1970-01-01T${bath.happy_hours_end_time}`);
+                                    const hhDays = Array.isArray(bath.happy_hours_days) ? bath.happy_hours_days : [];
+                                    const dayOk = hhDays.length === 0 || hhDays.includes(weekdayStr);
+                                    const inStart = selectedStartSlot.hour() >= hhStart.hour();
+                                    const inEnd = selectedEndSlot.hour() < hhEnd.hour();
+
+                                    if (dayOk && inStart && inEnd && selectedStartSlot.isSame(selectedEndSlot, 'day')) {
+                                        happyHoursApplies = true;
+
+                                        promotions.push({
+                                            type: 'HAPPY_HOURS',
+                                            text: `Счастливые часы: ${bath.happy_hours_discount_percentage}% скидка`,
+                                            color: 'text-orange-600',
+                                            bgColor: 'bg-orange-50',
+                                            borderColor: 'border-orange-200',
+                                            icon: '🎉'
+                                        });
+                                    }
+                                }
+
+                                // Check Bonus Hour (only if NOT Happy Hours)
+                                if (!happyHoursApplies && bath.bonus_hour_enabled && bath.bonus_hours_awarded > 0) {
+                                    const minHours = Number(bath.min_hours_for_bonus || 0);
+                                    const days = Array.isArray(bath.bonus_hour_days) ? bath.bonus_hour_days : [];
+
+                                    if (hours >= minHours && days.includes(weekdayStr)) {
+                                        promotions.push({
+                                            type: 'BONUS_HOUR',
+                                            text: `Час в подарок: +${bath.bonus_hours_awarded}ч бесплатно`,
+                                            color: 'text-green-600',
+                                            bgColor: 'bg-green-50',
+                                            borderColor: 'border-green-200',
+                                            icon: '⏰'
+                                        });
+                                    }
+                                }
+
+                                // Check Birthday (only if NOT Happy Hours)
+                                if (!happyHoursApplies && isBirthday && bath.birthday_discount_enabled && bath.birthday_discount_percentage > 0) {
+                                    promotions.push({
+                                        type: 'BIRTHDAY',
+                                        text: `День рождения: ${bath.birthday_discount_percentage}% скидка`,
+                                        color: 'text-pink-600',
+                                        bgColor: 'bg-pink-50',
+                                        borderColor: 'border-pink-200',
+                                        icon: '🎂'
+                                    });
+                                }
+
+                                if (promotions.length === 0) return null;
+
+                                return (
+                                    <div className="animate-pulse bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 mt-4 border-2 border-blue-200 shadow-lg">
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center animate-bounce">
+                                                <span className="text-white text-sm">✨</span>
+                                            </div>
+                                            <h4 className="font-bold text-blue-800 text-lg">Применяемые акции</h4>
+                                        </div>
+                                        <div className="space-y-2">
+                                            {promotions.map((promo, idx) => (
+                                                <div
+                                                    key={idx}
+                                                    className={`${promo.bgColor} ${promo.borderColor} border-2 rounded-lg p-3 transform transition-all duration-300 hover:scale-105 hover:shadow-md`}
+                                                    style={{ animationDelay: `${idx * 0.1}s` }}
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="text-2xl animate-pulse">{promo.icon}</div>
+                                                        <div className={`${promo.color} font-bold text-sm`}>
+                                                            {promo.text}
+                                                        </div>
+                                                        <div className="ml-auto">
+                                                            <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center animate-ping">
+                                                                <span className="text-white text-xs">✓</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+
+                            {/* Dynamic price calculation with discounts */}
+                            {(() => {
+                                const bath = bathhouses.find(b => b.id === currentRoom?.bathhouse);
+                                if (!bath || !selectedStartSlot || !selectedEndSlot) {
+                                    return (
+                                        <p>
+                                            <strong>Стоимость:</strong> {fmt(totalPrice)}₸
+                                        </p>
+                                    );
+                                }
+
+                                const hours = selectedEndSlot.diff(selectedStartSlot, 'hour') + 1;
+                                // Convert day to English format to match backend data
+                                const dayMap = {
+                                    'ПОНЕДЕЛЬНИК': 'MONDAY',
+                                    'ВТОРНИК': 'TUESDAY',
+                                    'СРЕДА': 'WEDNESDAY',
+                                    'ЧЕТВЕРГ': 'THURSDAY',
+                                    'ПЯТНИЦА': 'FRIDAY',
+                                    'СУББОТА': 'SATURDAY',
+                                    'ВОСКРЕСЕНЬЕ': 'SUNDAY'
+                                };
+                                const weekdayStr = dayMap[selectedStartSlot.format('dddd').toUpperCase()] || selectedStartSlot.format('dddd').toUpperCase();
+
+                                // Calculate base room price (before any discounts)
+                                const roomPricePerHour = currentRoom ? parseFloat(currentRoom.price_per_hour) : 0;
+                                const baseRoomPrice = hours * roomPricePerHour;
+                                const extraItemsPrice = itemsTotalPrice;
+                                const baseTotalPrice = baseRoomPrice + extraItemsPrice;
+
+                                let finalPrice = baseTotalPrice;
+                                let discountAmount = 0;
+                                let discountText = '';
+                                let hoursToCharge = hours;
+
+                                // Check if Happy Hours applies first
+                                let happyHoursApplies = false;
+                                if (bath.happy_hours_enabled && bath.happy_hours_discount_percentage > 0) {
+                                    const hhStart = dayjs(`1970-01-01T${bath.happy_hours_start_time}`);
+                                    const hhEnd = dayjs(`1970-01-01T${bath.happy_hours_end_time}`);
+                                    const hhDays = Array.isArray(bath.happy_hours_days) ? bath.happy_hours_days : [];
+                                    const dayOk = hhDays.length === 0 || hhDays.includes(weekdayStr);
+                                    const inStart = selectedStartSlot.hour() >= hhStart.hour();
+                                    const inEnd = selectedEndSlot.hour() < hhEnd.hour();
+
+                                    if (dayOk && inStart && inEnd && selectedStartSlot.isSame(selectedEndSlot, 'day')) {
+                                        happyHoursApplies = true;
+                                        discountAmount = (baseTotalPrice * bath.happy_hours_discount_percentage) / 100;
+                                        finalPrice = baseTotalPrice - discountAmount;
+                                        discountText = `Счастливые часы (${bath.happy_hours_discount_percentage}%)`;
+                                    }
+                                }
+
+                                // Check Bonus Hour (only if NOT Happy Hours)
+                                let bonusHourApplied = false;
+                                if (!happyHoursApplies && bath.bonus_hour_enabled && bath.bonus_hours_awarded > 0) {
+                                    const minHours = Number(bath.min_hours_for_bonus || 0);
+                                    const days = Array.isArray(bath.bonus_hour_days) ? bath.bonus_hour_days : [];
+
+                                    if (hours >= minHours && days.includes(weekdayStr)) {
+                                        const awardedHours = Number(bath.bonus_hours_awarded || 0);
+                                        hoursToCharge = Math.max(0, hours - awardedHours);
+                                        const newRoomPrice = hoursToCharge * roomPricePerHour;
+                                        finalPrice = newRoomPrice + extraItemsPrice;
+                                        discountAmount = baseTotalPrice - finalPrice;
+                                        discountText = `Час в подарок (+${awardedHours}ч бесплатно)`;
+                                        bonusHourApplied = true;
+                                    }
+                                }
+
+                                // Check Birthday (only if NOT Happy Hours) - can stack with Bonus Hour
+                                if (!happyHoursApplies && isBirthday && bath.birthday_discount_enabled && bath.birthday_discount_percentage > 0) {
+                                    if (bonusHourApplied) {
+                                        // If Bonus Hour was applied, apply birthday discount to the current price
+                                        const birthdayDiscount = (finalPrice * bath.birthday_discount_percentage) / 100;
+                                        finalPrice = finalPrice - birthdayDiscount;
+                                        discountAmount = baseTotalPrice - finalPrice;
+                                        discountText = `Час в подарок + День рождения (${bath.birthday_discount_percentage}%)`;
+                                    } else {
+                                        // If no Bonus Hour, apply birthday discount to base price
+                                        discountAmount = (baseTotalPrice * bath.birthday_discount_percentage) / 100;
+                                        finalPrice = baseTotalPrice - discountAmount;
+                                        discountText = `День рождения (${bath.birthday_discount_percentage}%)`;
+                                    }
+                                }
+
+                                return (
+                                    <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-4 border-2 border-green-200">
+                                        <div className="space-y-2">
+                                            <div className="flex justify-between items-center">
+                                                <span className="font-semibold text-gray-700">Базовая стоимость:</span>
+                                                <span className="text-gray-600">{fmt(baseTotalPrice)}₸</span>
+                                            </div>
+                                            {discountAmount > 0 && (
+                                                <div className="flex justify-between items-center animate-pulse">
+                                                    <span className="font-bold text-green-600">Скидка {discountText}:</span>
+                                                    <span className="font-bold text-green-600">-{fmt(discountAmount)}₸</span>
+                                                </div>
+                                            )}
+                                            <div className="border-t pt-2">
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-lg font-bold text-gray-800">Итого к оплате:</span>
+                                                    <span className="text-xl font-bold text-green-600">
+                                                        {fmt(finalPrice)}₸
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
                         </div>
+
+                        {(() => {
+                            // Check if Happy Hours applies to hide birthday checkbox
+                            const bath = bathhouses.find(b => b.id === currentRoom?.bathhouse);
+                            if (!bath || !selectedStartSlot || !selectedEndSlot) return null;
+
+                            const hours = selectedEndSlot.diff(selectedStartSlot, 'hour') + 1;
+                            const dayMap = {
+                                'ПОНЕДЕЛЬНИК': 'MONDAY',
+                                'ВТОРНИК': 'TUESDAY',
+                                'СРЕДА': 'WEDNESDAY',
+                                'ЧЕТВЕРГ': 'THURSDAY',
+                                'ПЯТНИЦА': 'FRIDAY',
+                                'СУББОТА': 'SATURDAY',
+                                'ВОСКРЕСЕНЬЕ': 'SUNDAY'
+                            };
+                            const weekdayStr = dayMap[selectedStartSlot.format('dddd').toUpperCase()] || selectedStartSlot.format('dddd').toUpperCase();
+
+                            let happyHoursApplies = false;
+                            if (bath.happy_hours_enabled && bath.happy_hours_discount_percentage > 0) {
+                                const hhStart = dayjs(`1970-01-01T${bath.happy_hours_start_time}`);
+                                const hhEnd = dayjs(`1970-01-01T${bath.happy_hours_end_time}`);
+                                const hhDays = Array.isArray(bath.happy_hours_days) ? bath.happy_hours_days : [];
+                                const dayOk = hhDays.length === 0 || hhDays.includes(weekdayStr);
+                                const inStart = selectedStartSlot.hour() >= hhStart.hour();
+                                const inEnd = selectedEndSlot.hour() < hhEnd.hour();
+
+                                if (dayOk && inStart && inEnd && selectedStartSlot.isSame(selectedEndSlot, 'day')) {
+                                    happyHoursApplies = true;
+                                }
+                            }
+
+                            // Hide birthday checkbox if Happy Hours applies
+                            if (happyHoursApplies) return null;
+
+                            return (
+                                <div className="flex items-center gap-2 mb-4">
+                                    <input
+                                        id="birthday"
+                                        type="checkbox"
+                                        checked={isBirthday}
+                                        onChange={(e) => setIsBirthday(e.target.checked)}
+                                        className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                                    />
+                                    <label htmlFor="birthday" className="text-sm text-gray-700">
+                                        Это мой день рождения
+                                    </label>
+                                </div>
+                            );
+                        })()}
 
                         {selectedItemsDetailed.length > 0 && (
                             <div className="mb-4">
@@ -1070,6 +1522,32 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                                     )}₸
                                 </span>
                             </div>
+                            {Array.isArray(confirmedBookingDetails.promotions_applied) && confirmedBookingDetails.promotions_applied.length > 0 && (
+                                <div className="mt-2">
+                                    {confirmedBookingDetails.promotions_applied.map((p, idx) => (
+                                        <div key={idx} className="flex justify-between text-sm text-gray-700">
+                                            {p.type === 'HAPPY_HOURS' && (
+                                                <>
+                                                    <span>Скидка «Happy Hours» ({p.percent}%)</span>
+                                                    <span>-{fmt(p.amount)}₸</span>
+                                                </>
+                                            )}
+                                            {p.type === 'BIRTHDAY' && (
+                                                <>
+                                                    <span>Скидка «День рождения» ({p.percent}%)</span>
+                                                    <span>-{fmt(p.amount)}₸</span>
+                                                </>
+                                            )}
+                                            {p.type === 'BONUS_HOUR' && (
+                                                <>
+                                                    <span>Акция «Бонусный час»</span>
+                                                    <span>+{p.hours_awarded} ч.</span>
+                                                </>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                             <div className="flex justify-between text-sm mt-1">
                                 <span className="text-blue-600 font-bold">Бонусы на счету:</span>
                                 <span className="text-blue-600 font-bold">{bonusBalance}₸</span>
@@ -1094,6 +1572,7 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                     </div>
                 </div>
             )}
+
         </div>
     );
 }
