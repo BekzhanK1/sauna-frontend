@@ -397,6 +397,7 @@ export default function BookingList() {
                     updated = prev.map((it) => it.item === itemId ? { ...it, quantity } : it);
                 } else {
                     updated = [...prev, { item: itemId, quantity }];
+                    ё
                 }
             }
 
@@ -762,8 +763,8 @@ export default function BookingList() {
                                             }
                                         }}
                                         className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-colors font-medium text-sm ${autoRefreshEnabled
-                                                ? 'bg-red-600 text-white hover:bg-red-700'
-                                                : 'bg-gray-600 text-white hover:bg-gray-700'
+                                            ? 'bg-red-600 text-white hover:bg-red-700'
+                                            : 'bg-gray-600 text-white hover:bg-gray-700'
                                             }`}
                                     >
                                         {autoRefreshEnabled ? (

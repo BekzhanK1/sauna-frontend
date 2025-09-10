@@ -46,7 +46,8 @@ export default function Sidebar({ activeTab, setActiveTab, logout, user, bathhou
     }, [bathhouseID]);
 
     const navButtonClass = (isActive) =>
-        `flex items-center py-3 px-4 rounded-xl mb-2 w-full overflow-hidden transition-all duration-200 group
+        `flex items-center py-3 rounded-xl mb-2 w-full overflow-hidden transition-all duration-200 group
+        ${collapsed ? "justify-center px-2" : "px-4"}
         ${isActive
             ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg transform scale-[1.02]"
             : "text-gray-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 hover:text-green-700 hover:shadow-md hover:transform hover:scale-[1.01]"
@@ -100,7 +101,7 @@ export default function Sidebar({ activeTab, setActiveTab, logout, user, bathhou
             >
                 {/* Header */}
                 <div className="flex items-center justify-between mb-8">
-                    {!collapsed && (
+                    {!collapsed ? (
                         <div className="flex items-center space-x-3">
                             <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl">
                                 <Home className="w-6 h-6 text-white" />
@@ -110,7 +111,28 @@ export default function Sidebar({ activeTab, setActiveTab, logout, user, bathhou
                                     {user.role === "superadmin" ? "Администратор" : "Администратор бани"}
                                 </h2>
                                 <p className="text-sm text-gray-500">Панель управления</p>
+                                {user && (
+                                    <p className="text-xs text-gray-400 mt-1">
+                                        {user.username || user.email || "Пользователь"}
+                                    </p>
+                                )}
                             </div>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center space-y-2">
+                            <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl">
+                                <Home className="w-6 h-6 text-white" />
+                            </div>
+                            {user && (
+                                <div className="text-center">
+                                    <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center mb-1">
+                                        <User className="w-4 h-4 text-gray-600" />
+                                    </div>
+                                    <p className="text-xs text-gray-500 truncate max-w-12">
+                                        {user.username || user.email || "Пользователь"}
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     )}
                     <button
@@ -132,7 +154,7 @@ export default function Sidebar({ activeTab, setActiveTab, logout, user, bathhou
                             onClick={() => handleTabClick("users")}
                             className={navButtonClass(activeTab === "users")}
                         >
-                            <User className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" />
+                            <User className={`w-5 h-5 group-hover:scale-110 transition-transform ${collapsed ? "" : "mr-3"}`} />
                             {!collapsed && <span className="font-medium">Пользователи</span>}
                         </button>
                     )}
@@ -141,7 +163,7 @@ export default function Sidebar({ activeTab, setActiveTab, logout, user, bathhou
                         onClick={() => handleTabClick("bathhouses")}
                         className={navButtonClass(activeTab === "bathhouses")}
                     >
-                        <Building2 className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" />
+                        <Building2 className={`w-5 h-5 group-hover:scale-110 transition-transform ${collapsed ? "" : "mr-3"}`} />
                         {!collapsed && <span className="font-medium">Банные комплексы</span>}
                     </button>
 
@@ -149,7 +171,7 @@ export default function Sidebar({ activeTab, setActiveTab, logout, user, bathhou
                         onClick={() => handleTabClick("bookings")}
                         className={navButtonClass(activeTab === "bookings")}
                     >
-                        <Calendar className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" />
+                        <Calendar className={`w-5 h-5 group-hover:scale-110 transition-transform ${collapsed ? "" : "mr-3"}`} />
                         {!collapsed && <span className="font-medium">Бронирования</span>}
                     </button>
 
@@ -157,7 +179,7 @@ export default function Sidebar({ activeTab, setActiveTab, logout, user, bathhou
                         onClick={() => handleTabClick("analytics")}
                         className={navButtonClass(activeTab === "analytics")}
                     >
-                        <BarChart className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" />
+                        <BarChart className={`w-5 h-5 group-hover:scale-110 transition-transform ${collapsed ? "" : "mr-3"}`} />
                         {!collapsed && <span className="font-medium">Аналитика</span>}
                     </button>
                 </div>
@@ -166,10 +188,10 @@ export default function Sidebar({ activeTab, setActiveTab, logout, user, bathhou
                 <div className="border-t border-gray-200 my-6"></div>
 
                 {/* Current Bathhouse Info */}
-                {bathhouse && (
+                {bathhouse && !collapsed && (
                     <div className={`mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 ${collapsed ? "text-center" : ""}`}>
                         <h3 className="text-sm font-semibold text-blue-600 mb-2 flex items-center">
-                            <Building2 className="w-4 h-4 mr-2" />
+                            <Building2 className={`w-4 h-4 ${collapsed ? "" : "mr-2"}`} />
                             {!collapsed && "Текущий комплекс"}
                         </h3>
                         <p className="text-lg font-bold text-gray-900 truncate">
@@ -186,16 +208,20 @@ export default function Sidebar({ activeTab, setActiveTab, logout, user, bathhou
                 {/* Management Section */}
                 {bathhouseID && (
                     <div className="space-y-2 mb-6">
-                        <h3 className="text-sm font-semibold text-gray-500 mb-3 flex items-center">
-                            <Settings className="w-4 h-4 mr-2" />
-                            {!collapsed && "Управление"}
-                        </h3>
+
+                        {!collapsed && (
+                            <h3 className="text-sm font-semibold text-gray-500 mb-3 flex items-center">
+                                <Settings className={`w-4 h-4 ${collapsed ? "" : "mr-2"}`} />
+                                {!collapsed && "Управление"}
+                            </h3>
+                        )}
+
 
                         <button
                             onClick={handleRoomsClick}
                             className={navButtonClass(activeTab === "rooms")}
                         >
-                            <DoorClosed className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" />
+                            <DoorClosed className={`w-5 h-5 group-hover:scale-110 transition-transform ${collapsed ? "" : "mr-3"}`} />
                             {!collapsed && <span className="font-medium">Сауны/Бани</span>}
                         </button>
 
@@ -203,7 +229,7 @@ export default function Sidebar({ activeTab, setActiveTab, logout, user, bathhou
                             onClick={handleMenuClick}
                             className={navButtonClass(activeTab === "menu")}
                         >
-                            <Coffee className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" />
+                            <Coffee className={`w-5 h-5 group-hover:scale-110 transition-transform ${collapsed ? "" : "mr-3"}`} />
                             {!collapsed && <span className="font-medium">Сервис и товары</span>}
                         </button>
 
@@ -211,7 +237,7 @@ export default function Sidebar({ activeTab, setActiveTab, logout, user, bathhou
                             onClick={handleBonusSystemClick}
                             className={navButtonClass(activeTab === "bonus-system")}
                         >
-                            <Gift className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" />
+                            <Gift className={`w-5 h-5 group-hover:scale-110 transition-transform ${collapsed ? "" : "mr-3"}`} />
                             {!collapsed && <span className="font-medium">Бонусная система</span>}
                         </button>
                     </div>
@@ -222,7 +248,7 @@ export default function Sidebar({ activeTab, setActiveTab, logout, user, bathhou
                     onClick={handleLogout}
                     className="mt-auto flex items-center bg-gradient-to-r from-red-500 to-red-600 text-white py-3 px-4 rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-200 w-full shadow-lg hover:shadow-xl transform hover:scale-[1.02] group"
                 >
-                    <LogOut className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" />
+                    <LogOut className={`w-5 h-5 group-hover:scale-110 transition-transform ${collapsed ? "" : "mr-3"}`} />
                     {!collapsed && <span className="font-medium">Выйти</span>}
                 </button>
             </div>
@@ -314,8 +340,8 @@ export default function Sidebar({ activeTab, setActiveTab, logout, user, bathhou
                                     <button
                                         onClick={handleRoomsClick}
                                         className={`flex items-center w-full py-3 px-4 rounded-xl transition-all duration-200 group ${activeTab === "rooms"
-                                                ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg transform scale-[1.02]"
-                                                : "text-gray-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 hover:text-green-700 hover:shadow-md hover:transform hover:scale-[1.01]"
+                                            ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg transform scale-[1.02]"
+                                            : "text-gray-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 hover:text-green-700 hover:shadow-md hover:transform hover:scale-[1.01]"
                                             }`}
                                     >
                                         <DoorClosed className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" />
@@ -325,8 +351,8 @@ export default function Sidebar({ activeTab, setActiveTab, logout, user, bathhou
                                     <button
                                         onClick={handleMenuClick}
                                         className={`flex items-center w-full py-3 px-4 rounded-xl transition-all duration-200 group ${activeTab === "menu"
-                                                ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg transform scale-[1.02]"
-                                                : "text-gray-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 hover:text-green-700 hover:shadow-md hover:transform hover:scale-[1.01]"
+                                            ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg transform scale-[1.02]"
+                                            : "text-gray-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 hover:text-green-700 hover:shadow-md hover:transform hover:scale-[1.01]"
                                             }`}
                                     >
                                         <Coffee className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" />
@@ -336,8 +362,8 @@ export default function Sidebar({ activeTab, setActiveTab, logout, user, bathhou
                                     <button
                                         onClick={handleBonusSystemClick}
                                         className={`flex items-center w-full py-3 px-4 rounded-xl transition-all duration-200 group ${activeTab === "bonus-system"
-                                                ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg transform scale-[1.02]"
-                                                : "text-gray-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 hover:text-green-700 hover:shadow-md hover:transform hover:scale-[1.01]"
+                                            ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg transform scale-[1.02]"
+                                            : "text-gray-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 hover:text-green-700 hover:shadow-md hover:transform hover:scale-[1.01]"
                                             }`}
                                     >
                                         <Gift className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" />
