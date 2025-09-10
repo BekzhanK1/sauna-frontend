@@ -1,6 +1,10 @@
-import { CheckCircle, XCircle, Plus, Users, Clock, Calendar, Waves, Armchair, Flame, Zap, Droplets, TreePine, Mountain } from 'lucide-react';
+import { CheckCircle, XCircle, Plus, Users, Clock, Calendar, Waves, Armchair, Flame, Zap, Droplets, TreePine, Mountain, Image, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { useState } from 'react';
 
 export default function RoomsList({ rooms, OnCreate, OnUpdate, OnDelete }) {
+    const [galleryOpen, setGalleryOpen] = useState(false);
+    const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+    const [currentRoomPhotos, setCurrentRoomPhotos] = useState([]);
     const getRoomTypeIcon = (room) => {
         if (room.is_sauna) return <Flame className="w-6 h-6 text-orange-500" />;
         return <Droplets className="w-6 h-6 text-blue-500" />;
@@ -21,6 +25,42 @@ export default function RoomsList({ rooms, OnCreate, OnUpdate, OnDelete }) {
             coal: <Mountain className="w-4 h-4" />
         };
         return icons[feature] || null;
+    };
+
+    const getPrimaryPhoto = (room) => {
+        if (!room.photos || room.photos.length === 0) {
+            return null;
+        }
+        const primaryPhoto = room.photos.find(photo => photo.is_primary) || room.photos[0];
+        return primaryPhoto;
+    };
+
+    const openGallery = (room) => {
+        if (room.photos && room.photos.length > 0) {
+            setCurrentRoomPhotos(room.photos);
+            // Find the primary photo index, or default to 0
+            const primaryPhotoIndex = room.photos.findIndex(photo => photo.is_primary);
+            setCurrentPhotoIndex(primaryPhotoIndex >= 0 ? primaryPhotoIndex : 0);
+            setGalleryOpen(true);
+        }
+    };
+
+    const closeGallery = () => {
+        setGalleryOpen(false);
+        setCurrentRoomPhotos([]);
+        setCurrentPhotoIndex(0);
+    };
+
+    const nextPhoto = () => {
+        setCurrentPhotoIndex((prev) =>
+            prev === currentRoomPhotos.length - 1 ? 0 : prev + 1
+        );
+    };
+
+    const prevPhoto = () => {
+        setCurrentPhotoIndex((prev) =>
+            prev === 0 ? currentRoomPhotos.length - 1 : prev - 1
+        );
     };
 
     const features = [
@@ -67,6 +107,7 @@ export default function RoomsList({ rooms, OnCreate, OnUpdate, OnDelete }) {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     {rooms.map((room) => (
+
                         <div
                             key={room.id}
                             className={`relative bg-gradient-to-br ${getRoomTypeColor(room)} rounded-2xl shadow-sm border hover:shadow-xl transition-all duration-300 overflow-hidden group`}
@@ -105,8 +146,45 @@ export default function RoomsList({ rooms, OnCreate, OnUpdate, OnDelete }) {
                                 </div>
                             </div>
 
-                            {/* Capacity and Pricing */}
+                            {/* Room Photo */}
                             <div className="px-6 pb-4">
+                                {getPrimaryPhoto(room) ? (
+                                    <div
+                                        className="relative aspect-video rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center cursor-pointer hover:opacity-90 transition-opacity"
+                                        style={{
+                                            backgroundImage: `url(${getPrimaryPhoto(room).image_url || getPrimaryPhoto(room).image})`,
+                                            backgroundSize: 'cover',
+                                            backgroundPosition: 'center',
+                                            backgroundRepeat: 'no-repeat'
+                                        }}
+                                        onClick={() => openGallery(room)}
+                                    >
+                                        {room.photos && room.photos.length > 1 && (
+                                            <div className="absolute top-2 right-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center space-x-1">
+                                                <Image className="w-3 h-3" />
+                                                <span>{room.photos.length}</span>
+                                            </div>
+                                        )}
+                                        {/* <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
+                                            <div className="opacity-0 hover:opacity-100 transition-opacity">
+                                                <div className="bg-white bg-opacity-90 rounded-full p-2">
+                                                    <Image className="w-6 h-6 text-gray-700" />
+                                                </div>
+                                            </div>
+                                        </div> */}
+                                    </div>
+                                ) : (
+                                    <div className="relative aspect-video rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center">
+                                        <div className="text-center text-gray-400">
+                                            <Image className="w-12 h-12 mx-auto mb-2" />
+                                            <p className="text-sm">Нет фотографий</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Capacity and Pricing */}
+                            < div className="px-6 pb-4" >
                                 <div className="grid grid-cols-1 gap-3">
                                     <div className="flex items-center justify-between bg-white/60 rounded-lg p-3">
                                         <div className="flex items-center">
@@ -186,9 +264,81 @@ export default function RoomsList({ rooms, OnCreate, OnUpdate, OnDelete }) {
                                 </div>
                             </div>
                         </div>
-                    ))}
-                </div>
+                    ))
+                    }
+                </div >
             )}
-        </div>
+
+            {/* Photo Gallery Modal */}
+            {
+                galleryOpen && currentRoomPhotos.length > 0 && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90">
+                        <div className="relative max-w-4xl max-h-[90vh] w-full mx-4">
+                            {/* Close Button */}
+                            <button
+                                onClick={closeGallery}
+                                className="absolute top-4 right-4 z-10 bg-black bg-opacity-50 text-white rounded-full p-2 hover:bg-opacity-70 transition-colors"
+                            >
+                                <X className="w-6 h-6" />
+                            </button>
+
+                            {/* Main Image */}
+                            <div className="relative">
+                                <img
+                                    src={currentRoomPhotos[currentPhotoIndex]?.image_url || currentRoomPhotos[currentPhotoIndex]?.image}
+                                    alt={`Photo ${currentPhotoIndex + 1}`}
+                                    className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
+                                />
+
+                                {/* Navigation Arrows */}
+                                {currentRoomPhotos.length > 1 && (
+                                    <>
+                                        <button
+                                            onClick={prevPhoto}
+                                            className="absolute left-4 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 text-white rounded-full p-2 hover:bg-opacity-70 transition-colors"
+                                        >
+                                            <ChevronLeft className="w-6 h-6" />
+                                        </button>
+                                        <button
+                                            onClick={nextPhoto}
+                                            className="absolute right-4 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 text-white rounded-full p-2 hover:bg-opacity-70 transition-colors"
+                                        >
+                                            <ChevronRight className="w-6 h-6" />
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+
+                            {/* Photo Counter */}
+                            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black bg-opacity-50 text-white px-3 py-1 rounded-full text-sm">
+                                {currentPhotoIndex + 1} / {currentRoomPhotos.length}
+                            </div>
+
+                            {/* Thumbnail Strip */}
+                            {currentRoomPhotos.length > 1 && (
+                                <div className="flex space-x-2 mt-4 justify-center overflow-x-auto">
+                                    {currentRoomPhotos.map((photo, index) => (
+                                        <button
+                                            key={photo.id}
+                                            onClick={() => setCurrentPhotoIndex(index)}
+                                            className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${index === currentPhotoIndex
+                                                ? 'border-blue-500'
+                                                : 'border-transparent hover:border-gray-300'
+                                                }`}
+                                        >
+                                            <img
+                                                src={photo.image_url || photo.image}
+                                                alt={`Thumbnail ${index + 1}`}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )
+            }
+        </div >
     );
 }

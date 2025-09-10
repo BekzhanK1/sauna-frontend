@@ -1,5 +1,6 @@
 import { Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
-import { X, Home, DollarSign, CheckCircle, XCircle, Flame, Wrench, Sun, Sparkles, Droplets, Settings } from "lucide-react";
+import { X, Home, DollarSign, CheckCircle, XCircle, Flame, Wrench, Sun, Sparkles, Droplets, Settings, Upload, Image, Star, Trash2 } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
 
 export default function RoomModal({
     isOpen,
@@ -8,8 +9,24 @@ export default function RoomModal({
     setRoomDetails,
     onSubmit,
     isUpdate = false,
-    onDelete
+    onDelete,
+    onUploadPhoto,
+    onDeletePhoto,
+    onSetPrimaryPhoto
 }) {
+    const [photos, setPhotos] = useState(roomDetails.photos || []);
+    const [uploading, setUploading] = useState(false);
+    const fileInputRef = useRef(null);
+
+    // Update photos when roomDetails change
+    useEffect(() => {
+        if (roomDetails.photos) {
+            setPhotos(roomDetails.photos);
+        } else {
+            setPhotos([]);
+        }
+    }, [roomDetails.photos]);
+
     const handleClose = () => {
         setIsOpen(false);
     };
@@ -22,6 +39,66 @@ export default function RoomModal({
     const handleDelete = () => {
         onDelete(roomDetails.id);
         setIsOpen(false);
+    };
+
+    const handleFileSelect = (event) => {
+        const files = Array.from(event.target.files);
+        if (files.length === 0) return;
+
+        files.forEach(file => {
+            if (file.type.startsWith('image/')) {
+                handleUploadPhoto(file);
+            }
+        });
+
+        // Reset file input
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
+    const handleUploadPhoto = async (file) => {
+        if (!roomDetails.id || !onUploadPhoto) return;
+
+        setUploading(true);
+        try {
+            const formData = new FormData();
+            formData.append('image', file);
+            formData.append('caption', '');
+            formData.append('is_primary', photos.length === 0 ? 'true' : 'false'); // Set as primary if it's the first photo
+
+            const newPhoto = await onUploadPhoto(roomDetails.id, formData);
+            setPhotos(prev => [...prev, newPhoto]);
+        } catch (error) {
+            console.error('Failed to upload photo:', error);
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const handleDeletePhoto = async (photoId) => {
+        if (!roomDetails.id || !onDeletePhoto) return;
+
+        try {
+            await onDeletePhoto(roomDetails.id, photoId);
+            setPhotos(prev => prev.filter(photo => photo.id !== photoId));
+        } catch (error) {
+            console.error('Failed to delete photo:', error);
+        }
+    };
+
+    const handleSetPrimaryPhoto = async (photoId) => {
+        if (!roomDetails.id || !onSetPrimaryPhoto) return;
+
+        try {
+            await onSetPrimaryPhoto(roomDetails.id, photoId);
+            setPhotos(prev => prev.map(photo => ({
+                ...photo,
+                is_primary: photo.id === photoId
+            })));
+        } catch (error) {
+            console.error('Failed to set primary photo:', error);
+        }
     };
 
     return (
@@ -261,6 +338,93 @@ export default function RoomModal({
                                 </div>
                             </div>
                         </div>
+
+                        {/* Photos Section */}
+                        {isUpdate && (
+                            <div className="space-y-4">
+                                <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2 flex items-center space-x-2">
+                                    <Image className="h-5 w-5" />
+                                    <span>Фотографии помещения</span>
+                                </h3>
+
+                                {/* Upload Section */}
+                                <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-400 transition-colors">
+                                    <input
+                                        ref={fileInputRef}
+                                        type="file"
+                                        multiple
+                                        accept="image/*"
+                                        onChange={handleFileSelect}
+                                        className="hidden"
+                                    />
+                                    <button
+                                        onClick={() => fileInputRef.current?.click()}
+                                        disabled={uploading}
+                                        className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors disabled:opacity-50"
+                                    >
+                                        <Upload className="h-4 w-4" />
+                                        <span>{uploading ? 'Загрузка...' : 'Добавить фотографии'}</span>
+                                    </button>
+                                    <p className="text-sm text-gray-500 mt-2">
+                                        Выберите одно или несколько изображений
+                                    </p>
+                                </div>
+
+                                {/* Photos Grid */}
+                                {photos.length > 0 && (
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                        {photos.map((photo) => (
+                                            <div key={photo.id} className="relative group">
+                                                <div className="aspect-square rounded-lg overflow-hidden bg-gray-100">
+                                                    <img
+                                                        src={photo.image_url || photo.image}
+                                                        alt={photo.caption || 'Room photo'}
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                </div>
+
+                                                {/* Primary Badge */}
+                                                {photo.is_primary && (
+                                                    <div className="absolute top-2 left-2 bg-yellow-500 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center space-x-1">
+                                                        <Star className="h-3 w-3" />
+                                                        <span>Главная</span>
+                                                    </div>
+                                                )}
+
+                                                {/* Action Buttons */}
+                                                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                                    <div className="flex space-x-2">
+                                                        {!photo.is_primary && (
+                                                            <button
+                                                                onClick={() => handleSetPrimaryPhoto(photo.id)}
+                                                                className="p-2 bg-white text-yellow-600 rounded-full hover:bg-yellow-50 transition-colors"
+                                                                title="Сделать главной"
+                                                            >
+                                                                <Star className="h-4 w-4" />
+                                                            </button>
+                                                        )}
+                                                        <button
+                                                            onClick={() => handleDeletePhoto(photo.id)}
+                                                            className="p-2 bg-white text-red-600 rounded-full hover:bg-red-50 transition-colors"
+                                                            title="Удалить"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {photos.length === 0 && (
+                                    <div className="text-center py-8 text-gray-500">
+                                        <Image className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+                                        <p>Фотографии не добавлены</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     {/* Footer */}

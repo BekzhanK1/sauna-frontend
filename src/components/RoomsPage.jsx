@@ -31,7 +31,8 @@ export default function RoomsPage() {
         has_washing_area: false,
         heated_by_wood: false,
         heated_by_coal: false,
-        bathhouse: bathhouseId
+        bathhouse: bathhouseId,
+        photos: []
     });
 
     const [rooms, setRooms] = useState([]);
@@ -57,7 +58,8 @@ export default function RoomsPage() {
             has_washing_area: false,
             heated_by_wood: false,
             heated_by_coal: false,
-            bathhouse: bathhouseId
+            bathhouse: bathhouseId,
+            photos: []
         });
     };
 
@@ -77,7 +79,8 @@ export default function RoomsPage() {
             has_washing_area: room.has_washing_area,
             heated_by_wood: room.heated_by_wood,
             heated_by_coal: room.heated_by_coal,
-            bathhouse: room.bathhouse
+            bathhouse: room.bathhouse,
+            photos: room.photos || []
         });
         setIsUpdate(true);
         setIsRoomModalOpen(true);
@@ -133,6 +136,82 @@ export default function RoomsPage() {
             toast.error("Не удалось удалить комнату");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const uploadRoomPhoto = async (roomId, formData) => {
+        try {
+            const res = await api.post(`${API_URLS.rooms}${roomId}/upload_photo/`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+
+            // Refresh the room data to get updated photos
+            const roomRes = await api.get(`${API_URLS.rooms}${roomId}/`);
+            const updatedRoom = roomRes.data;
+
+            // Update the rooms list
+            setRooms(rooms.map(room => room.id === roomId ? updatedRoom : room));
+
+            // Update roomDetails if this is the current room being edited
+            if (roomDetails.id === roomId) {
+                setRoomDetails(prev => ({ ...prev, photos: updatedRoom.photos || [] }));
+            }
+
+            return res.data;
+        } catch (err) {
+            console.error("Не удалось загрузить фотографию:", err);
+            toast.error("Не удалось загрузить фотографию");
+            throw err;
+        }
+    };
+
+    const deleteRoomPhoto = async (roomId, photoId) => {
+        try {
+            await api.delete(`${API_URLS.rooms}${roomId}/photos/${photoId}/`);
+
+            // Refresh the room data to get updated photos
+            const roomRes = await api.get(`${API_URLS.rooms}${roomId}/`);
+            const updatedRoom = roomRes.data;
+
+            // Update the rooms list
+            setRooms(rooms.map(room => room.id === roomId ? updatedRoom : room));
+
+            // Update roomDetails if this is the current room being edited
+            if (roomDetails.id === roomId) {
+                setRoomDetails(prev => ({ ...prev, photos: updatedRoom.photos || [] }));
+            }
+
+            toast.success("Фотография удалена");
+        } catch (err) {
+            console.error("Не удалось удалить фотографию:", err);
+            toast.error("Не удалось удалить фотографию");
+            throw err;
+        }
+    };
+
+    const setPrimaryRoomPhoto = async (roomId, photoId) => {
+        try {
+            await api.patch(`${API_URLS.rooms}${roomId}/photos/${photoId}/set-primary/`);
+
+            // Refresh the room data to get updated photos
+            const roomRes = await api.get(`${API_URLS.rooms}${roomId}/`);
+            const updatedRoom = roomRes.data;
+
+            // Update the rooms list
+            setRooms(rooms.map(room => room.id === roomId ? updatedRoom : room));
+
+            // Update roomDetails if this is the current room being edited
+            if (roomDetails.id === roomId) {
+                setRoomDetails(prev => ({ ...prev, photos: updatedRoom.photos || [] }));
+            }
+
+            toast.success("Главная фотография обновлена");
+        } catch (err) {
+            console.error("Не удалось установить главную фотографию:", err);
+            toast.error("Не удалось установить главную фотографию");
+            throw err;
         }
     };
 
@@ -197,6 +276,9 @@ export default function RoomsPage() {
                 onSubmit={isUpdate ? updateRoom : createRoom}
                 isUpdate={isUpdate}
                 onDelete={deleteRoom}
+                onUploadPhoto={uploadRoomPhoto}
+                onDeletePhoto={deleteRoomPhoto}
+                onSetPrimaryPhoto={setPrimaryRoomPhoto}
             />
         </div>
     );
