@@ -624,7 +624,7 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                                                         <span className="font-bold">Счастливые часы</span>
                                                     </div>
                                                     <div className="text-xs mt-1">
-                                                        {bathhouse.happy_hours_discount_percentage}% скидка с {bathhouse.happy_hours_start_time} до {bathhouse.happy_hours_end_time}
+                                                        {bathhouse.happy_hours_discount_percentage}% скидка с {dayjs(`1970-01-01T${bathhouse.happy_hours_start_time}`).format('HH:mm')} до {dayjs(`1970-01-01T${bathhouse.happy_hours_end_time}`).format('HH:mm')}
                                                     </div>
                                                 </div>
                                             )}
@@ -657,7 +657,7 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                                                         <span className="font-bold">Бонусная программа</span>
                                                     </div>
                                                     <div className="text-xs mt-1">
-                                                        {bathhouse.lower_bonus_percentage}% до {bathhouse.bonus_threshold_amount}₸, {bathhouse.higher_bonus_percentage}% свыше
+                                                        {bathhouse.lower_bonus_percentage}% до {fmt(Math.round(Number(bathhouse.bonus_threshold_amount)))}₸, {bathhouse.higher_bonus_percentage}% свыше
                                                     </div>
                                                 </div>
                                             )}
@@ -1376,18 +1376,25 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                             if (happyHoursApplies) return null;
 
                             return (
-                                <div className="flex items-center gap-2 mb-4">
-                                    <input
-                                        id="birthday"
-                                        type="checkbox"
-                                        checked={isBirthday}
-                                        onChange={(e) => setIsBirthday(e.target.checked)}
-                                        className="h-4 w-4 text-blue-600 border-gray-300 rounded"
-                                    />
-                                    <label htmlFor="birthday" className="text-sm text-gray-700">
-                                        Это мой день рождения
-                                    </label>
-                                </div>
+                                <>
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <input
+                                            id="birthday"
+                                            type="checkbox"
+                                            checked={isBirthday}
+                                            onChange={(e) => setIsBirthday(e.target.checked)}
+                                            className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                                        />
+                                        <label htmlFor="birthday" className="text-sm text-gray-700">
+                                            Это мой день рождения
+                                        </label>
+                                    </div>
+                                    {isBirthday && (
+                                        <div className="text-xs text-gray-600 mb-4">
+                                            Вы должны иметь удостоверение (Оригинал, Kaspi.kz, Egov)
+                                        </div>
+                                    )}
+                                </>
                             );
                         })()}
 
