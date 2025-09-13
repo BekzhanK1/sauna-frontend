@@ -12,6 +12,7 @@ import toast from "react-hot-toast";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { useNavigate } from "react-router-dom";
+import ServicesModal from "./ServicesModal";
 
 dayjs.extend(utc);
 
@@ -48,6 +49,7 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
     const [galleryOpen, setGalleryOpen] = useState(false);
     const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
     const [currentRoomPhotos, setCurrentRoomPhotos] = useState([]);
+    const [servicesModalOpen, setServicesModalOpen] = useState(false);
 
     const navigate = useNavigate();
 
@@ -999,59 +1001,48 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                                                                 {/* Additional services */}
                                                                 {Object.keys(groupedItems).length > 0 && (
                                                                     <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6 mt-6">
-                                                                        <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6">Дополнительные услуги</h3>
-                                                                        <div className="space-y-6">
-                                                                            {Object.entries(groupedItems).map(([categoryId, categoryData]) => (
-                                                                                <div key={categoryId}>
-                                                                                    <h4 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4">
-                                                                                        {categoryData.name}
-                                                                                    </h4>
-                                                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                                                                                        {categoryData.items.map((item) => {
-                                                                                            const selected = selectedItems.find(it => it.item === item.id)?.quantity || 0;
-                                                                                            return (
-                                                                                                <div key={item.id} className="bg-gray-50 rounded-xl p-3 sm:p-4 hover:bg-gray-100 transition-colors">
-                                                                                                    <div className="flex items-center space-x-3 sm:space-x-4">
-                                                                                                        {item.image && (
-                                                                                                            <div className="relative flex-shrink-0">
-                                                                                                                <img
-                                                                                                                    src={item.image}
-                                                                                                                    alt={item.name}
-                                                                                                                    className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-lg"
-                                                                                                                />
-                                                                                                            </div>
-                                                                                                        )}
-                                                                                                        <div className="flex-1 min-w-0">
-                                                                                                            <h5 className="font-medium text-gray-900 text-sm sm:text-base truncate">{item.name}</h5>
-                                                                                                            <p className="text-sm text-gray-500 mb-2">{Number(item.price).toLocaleString()} ₸</p>
-                                                                                                            <div className="flex items-center space-x-2">
-                                                                                                                {selected > 0 && (
-                                                                                                                    <>
-                                                                                                                        <button
-                                                                                                                            onClick={() => handleItemQuantityChange(item.id, Math.max(selected - 1, 0))}
-                                                                                                                            className="w-7 h-7 sm:w-8 sm:h-8 bg-red-100 text-red-600 rounded-full flex items-center justify-center hover:bg-red-200 transition-colors text-sm"
-                                                                                                                        >
-                                                                                                                            −
-                                                                                                                        </button>
-                                                                                                                        <span className="w-6 text-center font-medium">{selected}</span>
-                                                                                                                    </>
-                                                                                                                )}
-                                                                                                                <button
-                                                                                                                    onClick={() => handleItemQuantityChange(item.id, selected + 1)}
-                                                                                                                    className="w-7 h-7 sm:w-8 sm:h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center hover:bg-blue-200 transition-colors text-sm"
-                                                                                                                >
-                                                                                                                    +
-                                                                                                                </button>
-                                                                                                            </div>
-                                                                                                        </div>
-                                                                                                    </div>
-                                                                                                </div>
-                                                                                            );
-                                                                                        })}
-                                                                                    </div>
-                                                                                </div>
-                                                                            ))}
+                                                                        <div className="flex items-center justify-between mb-4">
+                                                                            <h3 className="text-lg sm:text-xl font-bold text-gray-900">Дополнительные услуги</h3>
+                                                                            <div className="text-sm text-gray-500">
+                                                                                {selectedItems.length > 0 && (
+                                                                                    <span className="text-blue-600 font-medium">
+                                                                                        {selectedItems.reduce((sum, item) => sum + item.quantity, 0)} позиций выбрано
+                                                                                    </span>
+                                                                                )}
+                                                                            </div>
                                                                         </div>
+
+                                                                        <button
+                                                                            onClick={() => setServicesModalOpen(true)}
+                                                                            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-4 px-6 rounded-xl font-semibold text-lg hover:from-blue-600 hover:to-purple-700 transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg flex items-center justify-center space-x-3"
+                                                                        >
+                                                                            <ShoppingCart className="w-6 h-6" />
+                                                                            <span>Выбрать дополнительные услуги</span>
+                                                                            {selectedItems.length > 0 && (
+                                                                                <span className="bg-white/20 px-2 py-1 rounded-full text-sm">
+                                                                                    {selectedItems.reduce((sum, item) => sum + item.quantity, 0)}
+                                                                                </span>
+                                                                            )}
+                                                                        </button>
+
+                                                                        {/* Selected items summary */}
+                                                                        {selectedItems.length > 0 && (
+                                                                            <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                                                                                <p className="text-sm text-blue-800 font-medium mb-2">Выбранные услуги:</p>
+                                                                                <div className="space-y-1 max-h-24 overflow-y-auto">
+                                                                                    {selectedItemsDetailed.map((item) => (
+                                                                                        <div key={item.id} className="flex justify-between text-sm text-blue-700">
+                                                                                            <span>{item.name} × {item.quantity}</span>
+                                                                                            <span>{Number(item.sum).toLocaleString()} ₸</span>
+                                                                                        </div>
+                                                                                    ))}
+                                                                                </div>
+                                                                                <div className="flex justify-between text-sm font-semibold text-blue-900 mt-2 pt-2 border-t border-blue-200">
+                                                                                    <span>Итого:</span>
+                                                                                    <span>{itemsTotalPrice.toLocaleString()} ₸</span>
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
                                                                     </div>
                                                                 )}
                                                             </>
@@ -1717,6 +1708,17 @@ export default function BookingPage({ bathhouse: singleBathhouse }) {
                     </div>
                 </div>
             )}
+
+            {/* Services Modal */}
+            <ServicesModal
+                isOpen={servicesModalOpen}
+                setIsOpen={setServicesModalOpen}
+                menuItems={menuItems}
+                categories={categories}
+                selectedItems={selectedItems}
+                onItemQuantityChange={handleItemQuantityChange}
+                onConfirm={() => { }}
+            />
 
         </div>
     );

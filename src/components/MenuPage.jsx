@@ -9,6 +9,7 @@ import Sidebar from './Sidebar';
 import MenuItemsList from './MenuItemsList';
 import MenuModal from './MenuModal';
 import CategoryModal from './CategoryModal';
+import BulkAddModal from './BulkAddModal';
 
 export default function MenuPage() {
     const [searchParams] = useSearchParams();
@@ -22,6 +23,7 @@ export default function MenuPage() {
     const [isUpdate, setIsUpdate] = useState(false);
     const [isMenuModalOpen, setIsMenuModalOpen] = useState(false);
     const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+    const [isBulkAddModalOpen, setIsBulkAddModalOpen] = useState(false);
     const [isCategoryUpdate, setIsCategoryUpdate] = useState(false);
     const [menuDetails, setMenuDetails] = useState({
         id: null,
@@ -126,6 +128,10 @@ export default function MenuPage() {
         setIsCategoryModalOpen(true);
     };
 
+    const handleBulkAdd = () => {
+        setIsBulkAddModalOpen(true);
+    };
+
     const updateMenuItem = async (itemData) => {
         setLoading(true);
         try {
@@ -182,6 +188,37 @@ export default function MenuPage() {
             nullifyMenuDetails();
             setLoading(false);
             setIsMenuModalOpen(false);
+        }
+    };
+
+    const bulkCreateMenuItems = async (itemsData) => {
+        setLoading(true);
+        try {
+            const promises = itemsData.map(itemData => {
+                const formData = new FormData();
+                Object.keys(itemData).forEach(key => {
+                    if (itemData[key] !== null) {
+                        formData.append(key, itemData[key]);
+                    }
+                });
+
+                return api.post(API_URLS.bathhouseItems, formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                    },
+                });
+            });
+
+            const responses = await Promise.all(promises);
+            const newItems = responses.map(res => res.data);
+            setMenuItems([...menuItems, ...newItems]);
+            toast.success(`Успешно добавлено ${newItems.length} позиций меню`);
+        } catch (err) {
+            console.error("Не удалось создать позиции меню:", err);
+            toast.error("Не удалось создать позиции меню");
+        } finally {
+            setLoading(false);
+            setIsBulkAddModalOpen(false);
         }
     };
 
@@ -290,6 +327,7 @@ export default function MenuPage() {
                         categories={categories}
                         OnUpdate={handleEditMenuItem}
                         OnCreate={handleCreateMenuItem}
+                        OnBulkAdd={handleBulkAdd}
                         OnDelete={deleteMenuItem}
                         OnEditCategory={handleEditCategory}
                         OnCreateCategory={handleCreateCategory}
@@ -316,6 +354,13 @@ export default function MenuPage() {
                 onSubmit={isCategoryUpdate ? updateCategory : createCategory}
                 isUpdate={isCategoryUpdate}
                 onDelete={deleteCategory}
+            />
+            <BulkAddModal
+                isOpen={isBulkAddModalOpen}
+                setIsOpen={setIsBulkAddModalOpen}
+                categories={categories}
+                onSubmit={bulkCreateMenuItems}
+                bathhouseId={bathhouseId}
             />
         </div>
     );

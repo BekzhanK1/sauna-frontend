@@ -1,6 +1,6 @@
-import { CheckCircleIcon, XCircleIcon, ImageIcon, Edit2Icon, Trash2Icon, PlusIcon } from 'lucide-react';
+import { CheckCircleIcon, XCircleIcon, ImageIcon, Edit2Icon, Trash2Icon, PlusIcon, UploadIcon } from 'lucide-react';
 
-export default function MenuItemsList({ menuItems, categories, OnCreate, OnUpdate, OnDelete, OnEditCategory, OnCreateCategory, OnDeleteCategory }) {
+export default function MenuItemsList({ menuItems, categories, OnCreate, OnUpdate, OnBulkAdd, OnDelete, OnEditCategory, OnCreateCategory, OnDeleteCategory }) {
     const groupedItems = categories.reduce((acc, category) => {
         acc[category.id] = {
             name: category.name,
@@ -30,6 +30,13 @@ export default function MenuItemsList({ menuItems, categories, OnCreate, OnUpdat
                     >
                         <PlusIcon className="w-4 h-4" />
                         <span className="text-sm sm:text-base">Создать позицию</span>
+                    </button>
+                    <button
+                        className="bg-purple-500 text-white py-2 px-4 rounded-md font-medium hover:bg-purple-600 transition flex items-center justify-center gap-2"
+                        onClick={OnBulkAdd}
+                    >
+                        <UploadIcon className="w-4 h-4" />
+                        <span className="text-sm sm:text-base">Массовое добавление</span>
                     </button>
                     <button
                         className="bg-blue-500 text-white py-2 px-4 rounded-md font-medium hover:bg-blue-600 transition flex items-center justify-center gap-2"
